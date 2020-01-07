@@ -1,3 +1,3 @@
-settings.json
-Pipfile
-Piffile.lock
+.vscode/settings.json
+mysite/Pipfile
+mysite/Piffile.lock
