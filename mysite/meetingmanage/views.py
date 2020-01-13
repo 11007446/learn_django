@@ -21,3 +21,9 @@ def index(request):
         'meetinglist': meetinglist,
     }
     return HttpResponse(template.render(context, request))
+
+
+def test(request):
+    template = loader.get_template('meetingmanage/testzui.htm')
+    context = {}
+    return HttpResponse(template.render(context, request))
