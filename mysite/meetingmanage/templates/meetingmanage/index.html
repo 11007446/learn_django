@@ -11,8 +11,10 @@
 
     <link rel="stylesheet" href="{% static 'meetingmanage/css/zui.min.css' %}">
     <link href="{% static 'meetingmanage/lib/datagrid/zui.datagrid.min.css' %}" rel="stylesheet">
+    {% comment %} <link href="{% static 'meetingmanage/lib/datatable/zui.datatable.min.css' %}" rel="stylesheet"> {% endcomment %}
     <script src="{% static 'meetingmanage/lib/jquery/jquery.js' %}"></script>
     <script src="{% static 'meetingmanage/js/zui.min.js' %}"></script>
+    {% comment %} <script src="{% static 'meetingmanage/lib/datatable/zui.datatable.min.js' %}"></script> {% endcomment %}
     <script src="{% static 'meetingmanage/lib/datagrid/zui.datagrid.min.js' %}"></script>
     <style>
         .center-block {
@@ -20,109 +22,279 @@
             margin-left: auto;
             margin-right: auto;
         }
+        .elesm {
+            width: 100px;
+
+        }
+        .elela {
+            width: 300px;
+
+        }
+        .elemd {
+            width: 200px;
+
+        }
+        .checked{
+width: 50px;
+
+        }
     </style>
 </head>
 
 <body>
+    <nav class="navbar" role="navigation">
+        <div class="container-fluid">
+            <!-- 导航头部 -->
+            <div class="navbar-header">
+
+            <!-- 品牌名称或logo -->
+            <a class="navbar-brand" href="your/nice/url">答辩管理</a>
+            </div>
 
 
-    <div class="container center-block ">
-        <div class="panel">
-            <div class="panel-heading">
-                答辩安排
+        </div><!-- END .navbar-collapse -->
+
+    </nav>     
+
+       
+
+    <div class="container-fluid">
+
+        
+        <form class="form-horizontal" method="post">
+        {% csrf_token %}
+            <input type="hidden" name="selectedPid" id="selectedPid">
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">答辩室</label>
+                <div class="col-md-6 col-sm-10">
+                    
+                    <select class="form-control elesm"  id="m_room">
+                        <option>上海1</option>
+                        <option>上海4</option>
+                    </select>
+    
+                </div>
             </div>
-            <div class="panel-body">
-                <div id="datagrid_meeting" class="datagrid"></div>
+            <div class="form-group">
+                <label for="m_date1" class="col-sm-1">答辩日期</label>
+                <div class="col-sm-2"  >
+                    
+                    <input type="text" class="form-control " id="m_date1" >
+                    <div class="help-block">起始 格式:2020-01-01</div>
+                </div>
+                <div class="col-sm-2"  >
+                    
+                    <input type="text" class="form-control " id="m_date2" >
+                    <div class="help-block">截止 格式:2020-01-01</div>
+                </div>
+                <div class="col-sm-4"  >
+                </div>
+
             </div>
+            
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">项目名称</label>
+                <div class="col-sm-4">
+                    <input type="text" class="form-control" id="m_name" >
+                    <div class="help-block">模糊匹配</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">项目指南</label>
+                <div class="col-sm-4">
+                    
+                    <input type="text" class="form-control" id="m_guide" >
+                    <div class="help-block">模糊匹配</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">负责人</label>
+                <div class="col-md-6 col-sm-10">
+                    
+                    <input type="text" class="form-control elesm" id="m_mp" >
+                    <div class="help-block">模糊匹配</div>
+    
+                </div>
+            </div>                
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-10">
+                <button type="submit" class="btn btn-default">查询</button>
+                
+                </div>
+            </div>
+        </form>
+        <hr>
+
+        <form class="form-horizontal" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="uploadexcel" class="col-sm-1">选择清单EXCEL文件</label>
+                <div class="col-md-6 col-sm-10">
+                
+                    <input type="file" class="form-control elela" name="importExcel" id='importExcel'>
+                    
+    
+                </div>
+                
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-10">
+                <button type="submit" class="btn" id="importBtn">导入</button>
+                <button type="button" class="btn" id="importBtn1">导入AJAX</button>
+                </div>
+            </div>
+            
+            
+
+        </form>
+        <hr>
+
+
+
+
+        <div class="row">
+            
+            <div class="col-md-5">
+                <button class="btn btn-danger" id="delselected">删除选中</button>
+            </div>
+
         </div>
+        {% comment %} 
+            <div class="alert">...</div>
+            <div class="alert alert-primary">...</div>
+            <div class="alert alert-danger">...</div>
+            <div class="alert alert-success">...</div>
+            <div class="alert alert-warning">...</div>
+            <div class="alert alert-info">...</div> 
+        {% endcomment %}
+        {% if messages %}
+            {% for message in messages %}
+             class="{{ message.tags }}" {% endif %} 
+                <div class="alert class="{{ message.tags }}" with-icon">
+                {% if 'alert-success' == message.tags %}
+                    <i class="icon-ok-sign"></i>
+                {% elif 'alert-danger' == message.tags %}
+                    <i class="icon-remove-sign"></i>
+                {% endif %}     
+                    <div class="content">{{ message }}</div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+
+
+                
+        <div id="datagrid_meeting" style="margin-top:10px" class="datagrid">
+            <div class="datagrid-container"></div>
+        </div>
+    
+
+
+        
     </div>
 
 
     <script>
-        $('#datagrid_meeting').datagrid({
-            dataSource: {
-                cols: [{
-                    name: 'm_room',
-                    label: '答辩室',
+        $(function(){
+            
+            
+            var tc_jsonarray = {{ tc_json|safe }};
+
+            
+
+            document.forms[1].action = "{% url "importExcel" %}";
+
+            $('#datagrid_meeting').datagrid({
+                checkable: true,
+                checkByClickRow: false,
+                dataSource: {
+                    cols:[
+                            {name:'m_room',label:'答辩室',width:60},
+                            {name:'m_name',label:'项目名称'},
+                            {name:'m_guide',label:'所属专题'},
+                            {name:'m_date',label:'答辩日期',width:150,className: 'text-center'},
+                            {name:'m_time',label:'答辩时间',width:150,className: 'text-center'},
+                            {name:'m_inteval',label:'时长(分钟)',className: 'text-center',width:90},
+                            {name:'m_mp',label:'负责人',width:80,className: 'text-center'},
+                            {name:'m_mobile',label:'联系方式',width:130},
+                            {name:'createtime',label:'创建时间',width:120,className: 'text-center'},                            
+                            {
+                                label: '操作',
+                                html: true,
+                                width:80,
+                                className: 'text-center',
+                                // 值转换器仅仅影响当前列
+                                valueOperator: {
+                                    getter: function (dataValue, cell, dataGrid) {
+                                        var id = cell.config.data.pid;
+                                        return "<button class='btn btn-danger btn-sm delbtn' value='"+id+"'><i class='icon icon-trash'></i>删除</button>&nbsp;&nbsp;"
+                                    }
+                                }
+                            }
+
+                        ],
+                    array: tc_jsonarray
+
+                }
+            });
 
 
-                }, {
-                    name: 'm_name',
-                    label: '项目名称'
 
-                }, {
-                    name: 'm_date',
-                    label: '答辩日期'
+            
+            $("#importBtn1").click(function () {
+                var fileobj = $('#importExcel')[0].files[0];   //先将jquery对象转换为dom对象
+                var form = new FormData();
+                form.append('importExcel',fileobj);
+                form.append("csrfmiddlewaretoken",'{{ csrf_token  }}');
+                $.ajax({
+                    url: '{% url "importExcel" %}',
+                    processData:false,
+                    contentType:false,
+                    type: 'POST',
+                    data: form
+                }).done(function(response, textStatus, jqXHR){ //same as .success (depricated as of 1.8)
+                    console.log("done");
+                    console.dir(arguments);
+                    //alert("cool");
+                })
+                .fail(function(jqXHR, textStatus, errorThrown){ //replaces .error
+                    console.log("error");
+                    console.dir(arguments);
+                })
+                .always(function(/*data|jqXHR, textStatus, jqXHR|errorThrown*/){ //replaces .complete
+                    console.log("always");
+                    console.dir(arguments);
+                });
+            });
 
-                }, {
-                    name: 'm_time',
-                    label: '答辩时间'
+            var datagrid_meeting = $('#datagrid_meeting').data('zui.datagrid');
+            // 获取选中
+            $("#delselected").click(function () {
+                // 获取当前已选中的行数据项
+                
+                var selectedItems = datagrid_meeting.getCheckItems();
+                itempids = selectedItems.join(',')
+                console.debug(itempids)    
+                $('#selectedPid').val(itempids)
+                document.forms[0].action = "{% url "delmeeting" %}";
+                document.forms[0].submit()
 
-                }, {
-                    name: 'm_inteval',
-                    label: '答辩时长'
+            })
 
-                }, {
-                    name: 'm_mp',
-                    label: '负责人'
+            
+            
 
-                }, {
-                    name: '联系方式',
-                    label: '答辩时长'
+            $("#datagrid_meeting").on("click",".delbtn",function(){
+                    //this 为子选择器定位 对象
+                    alert(this.value)
+            　　　　//$(this).remove();
+            });
 
-                }],
-                array: [{
-                    m_room: '上海1',
-                    m_name: '测死答辩课题名称',
-                    m_date: '2020-01-20',
-                    m_time: '15:30 ~ 16:00',
-                    m_inteval: '30',
-                    m_mp: '测试人员',
-                    m_mobile: '11111111111'
-                }, {
-                    m_room: '上海1',
-                    m_name: '测死答辩课题名称',
-                    m_date: '2020-01-20',
-                    m_time: '15:30 ~ 16:00',
-                    m_inteval: '30',
-                    m_mp: '测试人员',
-                    m_mobile: '11111111111'
-                }, {
-                    m_room: '上海1',
-                    m_name: '测死答辩课题名称',
-                    m_date: '2020-01-20',
-                    m_time: '15:30 ~ 16:00',
-                    m_inteval: '30',
-                    m_mp: '测试人员',
-                    m_mobile: '11111111111'
-                }, {
-                    m_room: '上海1',
-                    m_name: '测死答辩课题名称',
-                    m_date: '2020-01-20',
-                    m_time: '15:30 ~ 16:00',
-                    m_inteval: '30',
-                    m_mp: '测试人员',
-                    m_mobile: '11111111111'
-                }, {
-                    m_room: '上海1',
-                    m_name: '测死答辩课题名称',
-                    m_date: '2020-01-20',
-                    m_time: '15:30 ~ 16:00',
-                    m_inteval: '30',
-                    m_mp: '测试人员',
-                    m_mobile: '11111111111'
-                }, {
-                    m_room: '上海1',
-                    m_name: '测死答辩课题名称',
-                    m_date: '2020-01-20',
-                    m_time: '15:30 ~ 16:00',
-                    m_inteval: '30',
-                    m_mp: '测试人员',
-                    m_mobile: '11111111111'
-                }]
 
-            }
         });
+        
+
+
     </script>
 </body>
 
