@@ -11,13 +11,12 @@ class Meeting(models.Model):
 
     m_name = models.CharField(max_length=100)  # 答辩项目名称
 
-    m_date = models.CharField(max_length=10)  # 答辩日期
+    m_date = models.DateField()  # 答辩日期
 
     m_stime = models.TimeField()  # 答辩时间起
 
     m_etime = models.TimeField()  # 答辩时间止
 
-    #createtime = models.TimeField()  # 答辩记录创建时间
     createtime = models.DateTimeField()  # 答辩记录创建时间 timefield只记录时分秒 DateTimeField 时分秒年月日
 
     m_inteval = models.IntegerField()  # 答辩时长
@@ -31,6 +30,7 @@ class Meeting(models.Model):
     m_org = models.CharField(max_length=100, default='')  # 项目承担单位
 
     m_orgre = models.CharField(max_length=100, default='')  # 项目推荐单位
+
     m_number = models.CharField(max_length=50, default='')  # 项目编号
 
 

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    {% load static %}
+
+
+    <link rel="stylesheet" href="{% static 'meetingmanage/css/zui.min.css' %}">
+    <link href="{% static 'meetingmanage/lib/datagrid/zui.datagrid.min.css' %}" rel="stylesheet">
+    {% comment %} <link href="{% static 'meetingmanage/lib/datatable/zui.datatable.min.css' %}" rel="stylesheet"> {% endcomment %}
+    <script src="{% static 'meetingmanage/lib/jquery/jquery.js' %}"></script>
+    <script src="{% static 'meetingmanage/js/zui.min.js' %}"></script>
+    {% comment %} <script src="{% static 'meetingmanage/lib/datatable/zui.datatable.min.js' %}"></script> {% endcomment %}
+    <script src="{% static 'meetingmanage/lib/datagrid/zui.datagrid.min.js' %}"></script>
+    <style>
+        .center-block {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .elesm {
+            width: 100px;
+
+        }
+        .elela {
+            width: 300px;
+
+        }
+        .elemd {
+            width: 200px;
+
+        }
+        .checked{
+width: 50px;
+
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar" role="navigation">
+        <div class="container-fluid">
+            <!-- 导航头部 -->
+            <div class="navbar-header">
+
+            <!-- 品牌名称或logo -->
+            <a class="navbar-brand" href="your/nice/url">答辩管理</a>
+            </div>
+
+
+        </div><!-- END .navbar-collapse -->
+
+    </nav>     
+
+       
+
+    <div class="container-fluid" id="searchform">
+        <form class="form-horizontal" method="post">
+        {% csrf_token %}
+            <input type="hidden" name="selectedPid" id="selectedPid">
+            <input type="hidden" name="selectedPname" id="selectedPname">
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">答辩室</label>
+                <div class="col-md-6 col-sm-10">
+                    
+                    <select class="form-control elesm"  id="m_room_s" name="m_room_s">
+                        <option>上海1</option>
+                        <option>上海4</option>
+                    </select>
+    
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">项目名称</label>
+                <div class="col-sm-4">
+                    <input type="text" class="form-control" id="m_name_s" name="m_name_s" >
+                    <div class="help-block">模糊匹配</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">项目指南</label>
+                <div class="col-sm-4">
+                    
+                    <input type="text" class="form-control" id="m_guide_s" name="m_guide_s" >
+                    <div class="help-block">模糊匹配</div>
+                </div>
+            </div>            
+            <div class="form-group">
+                <label for="m_room" class="col-sm-1">负责人</label>
+                <div class="col-md-6 col-sm-10">
+                    
+                    <input type="text" class="form-control elesm" id="m_mp_s"  name="m_mp_s">
+                    <div class="help-block">模糊匹配</div>
+                </div>
+            </div>                
+            <div class="form-group">
+                <label for="m_date1" class="col-sm-1">答辩日期</label>
+                <div class="col-sm-2"  >
+                    
+                    <input type="text" class="form-control " id="m_date1" name="m_date1" >
+                    <div class="help-block">起始 格式:2020-01-01</div>
+                </div>
+                <div class="col-sm-2"  >
+                    
+                    <input type="text" class="form-control " id="m_date2" name="m_date2" >
+                    <div class="help-block">截止 格式:2020-01-01</div>
+                </div>
+                <div class="col-sm-4"  >
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="createtime1" class="col-sm-1">导入日期</label>
+                <div class="col-sm-2"  >
+                    
+                    <input type="text" class="form-control " id="createtime1" name="createtime1">
+                    <div class="help-block">起始 格式:2020-01-01 12:30</div>
+                </div>
+                <div class="col-sm-2"  >
+                    
+                    <input type="text" class="form-control " id="createtime2" name="createtime2">
+                    <div class="help-block">起始 格式:2020-01-01 12:30</div>
+                </div>
+                <div class="col-sm-4"  >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-10">
+                <button type="submit" class="btn btn-default" id="searchsubmit">查询</button>
+                &nbsp;
+                <button type="submit" class="btn btn-default" id="exportexcel">导出签到表</button>
+                
+                </div>
+            </div>
+        </form>
+        <hr>
+
+        <form class="form-horizontal" id="uploadform" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="uploadexcel" class="col-sm-1">选择清单EXCEL文件</label>
+                <div class="col-md-6 col-sm-10">
+                
+                    <input type="file" class="form-control elela" name="importExcel" id='importExcel'>
+                    
+    
+                </div>
+                
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-10">
+                <button type="submit" class="btn" id="importBtn">导入</button>
+                
+                </div>
+            </div>
+            
+            
+
+        </form>
+        <hr>
+
+        <div class="row" id="buttongroup">
+            
+            <div class="col-md-5">
+                <button class="btn btn-danger" id="delselected">删除选中</button> <button type="button" class="btn  btn-primary" data-toggle="modal" data-target="#myModal">修改</button>
+            </div>
+
+        </div>
+        <div class="row" id="messagepanel">
+            <div class="col-md-6" style="margin-top:10px">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {{ message.tags }} with-icon">
+                    {% if 'alert-success' == message.extra_tags %}
+                        <i class="icon-ok-sign"></i>
+                    {% elif 'alert-danger' == message.extra_tags %}
+                        <i class="icon-remove-sign"></i>
+                    {% endif %}     
+                        <div class="content">{{ message }}</div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            </div>
+        </div>
+
+        <div id="datagrid_meeting" style="margin-top:10px" class="datagrid">
+            <div class="datagrid-container"></div>
+        </div>
+
+    </div>
+
+
+
+    
+    <div class="modal" id="myModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">关闭</span></button>
+            <h4 class="modal-title">修改答辩安排信息</h4>
+        </div>
+        <div class="modal-body">
+            <form class="form-horizontal" method="post" id="editform">
+                {% csrf_token %}
+                <input type="hidden" name="editPid" id="editPid">
+                
+                <div class="form-group">
+                    <label for="m_room" class="col-sm-2 ">答辩室</label>
+                    <div class="col-sm-2">
+                        <select class="form-control " id="m_room" name="m_room">
+                            <option>上海1</option>
+                            <option>上海4</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="m_room" class="col-sm-2">项目名称</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="m_name" name="m_name">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="m_room" class="col-sm-2">项目指南</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="m_guide" name="m_guide">
+                    </div>
+                </div>                
+                <div class="form-group">
+                    <label for="m_room" class="col-sm-2 ">负责人</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" name="m_mp" id="m_mp">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="m_room" class="col-sm-2 ">联系方式</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control " id="m_mobile" name="m_mobile">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="m_room" class="col-sm-2 ">申报单位</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control " id="m_org" name="m_org">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="m_room" class="col-sm-2 ">推荐单位</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control " id="m_orgre" name="m_orgre">
+                    </div>
+                </div>                                
+                <div class="form-group">
+                    <label for="m_date1" class="col-sm-2">答辩日期</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control " id="m_date" name="m_date">
+                        <div class="help-block">起始 格式:2020-01-01</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="m_date1" class="col-sm-2">答辩时间</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control " id="m_stime" name="m_stime">
+                        <div class="help-block">开始 格式:12:00</div>
+                    </div>
+                    <div class="col-sm-4">
+
+                        <input type="text" class="form-control " id="m_etime" name="m_etime">
+                        <div class="help-block">结束 格式:12:00</div>
+                    </div>
+                    <div class="col-sm-4">
+                    </div>
+                </div>
+
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">放弃修改</button>
+            <button type="button" class="btn btn-primary" id="submitedit">提交修改</button>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        $(function(){
+            
+            
+            var tc_jsonarray = {{ tc_json|safe }};
+
+            
+
+            document.forms[1].action = "{% url "importExcel" %}";
+
+            $('#datagrid_meeting').datagrid({
+                checkable: true,
+                checkByClickRow: false,
+                dataSource: {
+                    cols:[
+                            {
+                                label: '操作',
+                                html: true,
+                                width:80,
+                                className: 'text-center',
+                                // 值转换器仅仅影响当前列
+                                valueOperator: {
+                                    getter: function (dataValue, cell, dataGrid) {
+                                        var id = cell.config.data.pid;
+                                        return "<button type='button' class='btn btn-sm btn-primary editbtn' value='"+id+"'><i class='icon icon-trash'></i>修改</button>"
+                                    }
+                                }
+                            },
+                            {name:'m_room',label:'答辩室',width:60},
+                            {name:'m_name',label:'项目名称'},
+                            {name:'m_guide',label:'所属专题'},
+                            {name:'m_date',label:'答辩日期',width:150,className: 'text-center'},
+                            {name:'m_time',label:'答辩时间',width:150,className: 'text-center'},
+                            {name:'m_inteval',label:'时长(分钟)',className: 'text-center',width:90},
+                            {name:'m_mp',label:'负责人',width:80,className: 'text-center'},
+                            {name:'m_mobile',label:'联系方式',width:130},
+                            {name:'createtime',label:'导入时间',className: 'text-center'}
+                            
+
+                        ],
+                    array: tc_jsonarray
+
+                }
+            });
+
+
+
+            
+            $("#importBtn1").click(function () {
+                var fileobj = $('#importExcel')[0].files[0];   //先将jquery对象转换为dom对象
+                var form = new FormData();
+                form.append('importExcel',fileobj);
+                form.append("csrfmiddlewaretoken",'{{ csrf_token  }}');
+                $.ajax({
+                    url: '{% url "importExcel" %}',
+                    processData:false,
+                    contentType:false,
+                    type: 'POST',
+                    data: form
+                }).done(function(response, textStatus, jqXHR){ //same as .success (depricated as of 1.8)
+                    console.log("done");
+                    console.dir(arguments);
+                    //alert("cool");
+                })
+                .fail(function(jqXHR, textStatus, errorThrown){ //replaces .error
+                    console.log("error");
+                    console.dir(arguments);
+                })
+                .always(function(/*data|jqXHR, textStatus, jqXHR|errorThrown*/){ //replaces .complete
+                    console.log("always");
+                    console.dir(arguments);
+                });
+            });
+
+            var datagrid_meeting = $('#datagrid_meeting').data('zui.datagrid');
+            // 获取选中
+            $("#delselected").click(function () {
+                // 获取当前已选中的行数据项
+                
+                var selectedItems = datagrid_meeting.getCheckItems();
+                
+                itempids = []
+                pnames = []
+                for(var i=0;i<selectedItems.length;i++){
+                    if(selectedItems[i]){
+                        itempids.push(selectedItems[i].pid)
+                        pnames.push(selectedItems[i].m_name)
+                    }
+                }
+                
+                itempids = itempids.join(',')
+                pnames ="[" + pnames.join('],[') + "]"
+                
+                
+                $('#selectedPid').val(itempids)
+                $('#selectedPname').val(pnames)
+                document.forms[0].action = "{% url "delmeeting" %}";
+                document.forms[0].submit()
+
+            })
+
+            
+            
+
+            $("#datagrid_meeting").on("click",".editbtn",function(){
+                    //this 为子选择器定位 对象
+                var form = new FormData();
+                form.append('editPid',this.value);
+                form.append("csrfmiddlewaretoken",'{{ csrf_token }}');
+                
+                $.ajax({
+                    url: '{% url "showmeeting" %}',
+                    type: 'POST',
+                    processData:false,
+                    contentType:false,
+                    dataType: 'json',
+                    data: form,
+                    success: function(returndata){
+                        var meeting = returndata;
+                        $("#editPid").val(meeting.pid)
+
+                        $('#m_room').val(meeting.m_room);
+                        $('#m_date').val(meeting.m_date);
+                        $('#m_guide').val(meeting.m_guide);
+                        $('#m_name').val(meeting.m_name);
+                        $('#m_mp').val(meeting.m_mp);
+                        $('#m_mobile').val(meeting.m_mobile);
+                        $('#m_stime').val(meeting.m_stime);
+                        $('#m_etime').val(meeting.m_etime);
+                        $('#m_number').val(meeting.m_number);
+                        $('#m_org').val(meeting.m_org);
+                        $('#m_orgre').val(meeting.m_orgre);
+
+
+                        $('#myModal').modal()
+                    },
+                    complete:function(request,statuscode){
+                        alert(statuscode)
+
+                    }
+
+                }).done(function(response, textStatus, jqXHR){ //same as .success (depricated as of 1.8)
+                    console.log("done");
+                    console.dir(arguments);
+                    //alert("cool");
+                })
+                .fail(function(jqXHR, textStatus, errorThrown){ //replaces .error
+                    console.log("error");
+                    console.dir(arguments);
+                })
+                .always(function(/*data|jqXHR, textStatus, jqXHR|errorThrown*/){ //replaces .complete
+                    console.log("always");
+                    console.dir(arguments);
+                });
+                
+            　　　　//$(this).remove();
+            }); 
+
+            $("#submitedit").click(function(){
+                $("#editform").attr("action","{% url "submitedit" %}");
+                $("#editform")[0].submit()
+                
+            })
+
+
+
+            $("#searchsubmit").click(function(){
+                $("#searchform").attr("action","{% url "index" %}");
+                $("#searchform")[0].submit()
+            })
+
+
+searchsubmit
+
+
+        });
+        
+
+
+    </script>
+</body>
+
+</html>
