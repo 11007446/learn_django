@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /mysite/Pipfile
 /mysite/Pipfile.lock
 /mysite/meetingmanage/__pycache__
@@ -7,13 +6,5 @@
 /mysite/polls/migrations
 /mysite/mysite/__pycache__
 /.vscode/settings.json
-=======
-/.vscode/settings.json
-/mysite/Pipfile
-/mysite/Pipfile.lock
-/mysite/mysite/__pycache__
-/mysite/meetingmanage/__pycache__
-/mysite/meetingmanage/migrations
-/mysite/polls/__pycache__
-/mysite/polls/migrations
->>>>>>> 29fdecc5f4aa1894095d13fb1e15948bf24d433d
+*.pyc
+

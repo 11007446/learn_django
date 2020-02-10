@@ -75,6 +75,13 @@ width: 50px;
                 </div>
             </div>
             <div class="form-group">
+                <label for="m_room" class="col-sm-1">批次号</label>
+                <div class="col-sm-4">
+                    <input type="text" class="form-control" id="m_lotno_s" name="m_lotno_s" >
+                    <div class="help-block">模糊匹配</div>
+                </div>
+            </div>
+            <div class="form-group">
                 <label for="m_room" class="col-sm-1">项目名称</label>
                 <div class="col-sm-4">
                     <input type="text" class="form-control" id="m_name_s" name="m_name_s" >
@@ -142,14 +149,16 @@ width: 50px;
         <form class="form-horizontal" id="uploadform" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="form-group">
-                <label for="uploadexcel" class="col-sm-1">选择清单EXCEL文件</label>
-                <div class="col-md-6 col-sm-10">
-                
-                    <input type="file" class="form-control elela" name="importExcel" id='importExcel'>
-                    
-    
+                <label for="uploadexcel" class="col-sm-1">输入批次号</label>
+                <div class="col-sm-4">
+                    <input type="text" class="form-control" name="m_lotno" id='m_lotno'>
                 </div>
-                
+            </div>
+            <div class="form-group">
+                <label for="uploadexcel" class="col-sm-1">选择清单EXCEL文件</label>
+                <div class="col-sm-4">
+                    <input type="file" class="form-control" name="importExcel" id='importExcel'>
+                </div>
             </div>
             <div class="form-group">
                 <div class="col-sm-offset-1 col-sm-10">
@@ -313,6 +322,7 @@ width: 50px;
                                     }
                                 }
                             },
+                            {name:'m_lotno',label:'批次号',width:100},
                             {name:'m_room',label:'答辩室',width:60},
                             {name:'m_name',label:'项目名称'},
                             {name:'m_guide',label:'所属专题'},
@@ -335,8 +345,10 @@ width: 50px;
             
             $("#importBtn1").click(function () {
                 var fileobj = $('#importExcel')[0].files[0];   //先将jquery对象转换为dom对象
+                var m_lotno = $('#m_lotno').val();   //先将jquery对象转换为dom对象
                 var form = new FormData();
                 form.append('importExcel',fileobj);
+                form.append('m_lotno',m_lotno);
                 form.append("csrfmiddlewaretoken",'{{ csrf_token  }}');
                 $.ajax({
                     url: '{% url "importExcel" %}',

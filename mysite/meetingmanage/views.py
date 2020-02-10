@@ -65,30 +65,24 @@ def showmeeting(request):
         return redirect(reverse("index"))
 
 
-
 def preparQ(q, con_name, con_value, con_suf='', func_format=None):
     """将查询条件填充Q查询对象
-    
     Arguments:
         q {[type]} -- [Q查询对象]
         con_suf {[type]} -- [查询条件后缀 例: __contains __glt ] (default: "")
         con_name {[type]} -- [查询参数名称]
         con_value {[type]} -- [查询参数值]
-    
     Keyword Arguments:
         func_format {[type]} -- [格式化参数值回调函数] (default: {None})
-    
     Returns:
         [type] -- [返回填充后的Q对象]
     """
-    if(con_value):  # 参数值非空,该查询条件起效
-        if(func_format):  # 提供参数格式化函数,对参数进行格式化
+    if (con_value):  # 参数值非空,该查询条件起效
+        if (func_format):  # 提供参数格式化函数,对参数进行格式化
             q.children.append((con_name + con_suf, func_format(con_value)))
         else:
             q.children.append((con_name + con_suf, con_value))
     return q
-
-
 
 
 def index(request):
@@ -108,7 +102,7 @@ def index(request):
         m_date2 = concat['m_date2']
         createtime1 = concat['createtime1']
         createtime2 = concat['createtime2']
-        
+
         #con_dict = {}  # 条件字典
         #fillconditiondict(con_dict, '')
         # Q使用案例 OR: list.filter(Q(pk_ _lt=6) | Q(bcommet_ _gt=10))
@@ -120,30 +114,36 @@ def index(request):
         preparQ(q1, 'm_room', m_room_s)
         # 模糊查询
         preparQ(q1, 'm_name', m_name_s, con_suf='__contains')
-        
+        preparQ(q1, 'm_guide', m_guide_s, con_suf='__contains')
+        preparQ(q1, 'm_mp', m_mp_s, con_suf='__contains')
+        # 范围查询
+        preparQ(q1, 'm_date', m_date1, con_suf='__gte')
+        preparQ(q1, 'm_date', m_date2, con_suf='__lte')
+
         # q1.children.append(('m_name__contains', m_name_s))
         # q1.children.append(('m_guide__contains', m_guide_s))
         # q1.children.append(('m_mp__contains', m_mp_s))
         # 范围查询
         # q1.children.append(('m_name__contains', m_name_s))
 
-
-        meetinglist = Meeting.objects.filter(q1).order_by('-m_date', '-m_stime', 'createtime')
+        meetinglist = Meeting.objects.filter(q1).order_by(
+            '-m_date', '-m_stime', 'createtime')
     else:
         pass
-        meetinglist = Meeting.objects.order_by('-m_date', '-m_stime', 'createtime')  # 答辩日期 答辩开始时间降序排序
+        meetinglist = Meeting.objects.order_by('-m_date', '-m_stime',
+                                               'createtime')  # 答辩日期 答辩开始时间降序排序
     array_json = []
     for meeting in meetinglist:
         # print(meeting)
         #FIXME 答辩时间格式化抽取到工具方法中
         array_json.append(
             '{' +
-            'pid: "{}", m_guide: "{}", m_room: "{}", m_name: "{}", m_date: "{}", m_time: "{}", m_inteval: "{}", m_mp: "{}", m_mobile: "{}",  createtime: "{}"'
-            .format(meeting.pid, meeting.m_guide, meeting.m_room,
-                    meeting.m_name, meeting.m_date,
+            'pid: "{}", m_guide: "{}", m_lotno: "{}", m_room: "{}", m_name: "{}", m_date: "{}", m_time: "{}", m_inteval: "{}", m_mp: "{}", m_mobile: "{}",  createtime: "{}"'
+            .format(meeting.pid, meeting.m_guide, meeting.m_lotno,
+                    meeting.m_room, meeting.m_name, meeting.m_date,
                     (meeting.m_stime.strftime("%H:%M") + " - " +
-                        meeting.m_etime.strftime("%H:%M")
-                        ), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
+                     meeting.m_etime.strftime("%H:%M")
+                     ), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
                     meeting.createtime.strftime('%Y-%m-%d %H:%M')) + '}')
     tc_json = ','.join(array_json)
     tc_json = '[{}]'.format(tc_json)
@@ -161,6 +161,20 @@ def test(request):
     context = {}
 
     return HttpResponse(template.render(context, request))
+
+
+def formatmdate(mdatestr):
+    """[格式化日期函数]
+    预留该函数应对日后各种日期格式的情况
+    目前只针对 XXXX年XX月XX日 格式
+    Arguments:
+        mdatestr {[字符串]} -- [description]
+    Returns:
+        [datetime] -- [description]
+    """
+    formatresult = datetime.strptime(mdatestr, '%Y年%m月%d日')
+    return formatresult
+
 
 
 def submitedit(request):
@@ -193,6 +207,8 @@ def importExcel(request):
         return redirect("/meetingmanage/")
     elif "POST" == request.method:
         try:
+            concat = request.POST
+            m_lotno = concat['m_lotno']
             excel_file = request.FILES['importExcel']
             wb = xlrd.open_workbook(filename=None,
                                     file_contents=excel_file.read())
@@ -201,11 +217,9 @@ def importExcel(request):
             now = datetime.now()
             for rowindex in range(1, total_rows):  # 跳过首行标题
                 row = table.row_values(rowindex)
-
                 timestr = row[2]
                 stime = None
                 etime = None
-
                 interval = 0
                 #FIXME 答辩时间解析, 间隔计算抽取到工具方法中
                 if timestr.strip() != '':
@@ -213,14 +227,14 @@ def importExcel(request):
                     stime = datetime.strptime(timearray[0].strip(), "%H:%M")
                     etime = datetime.strptime(timearray[1].strip(), "%H:%M")
                     interval = (etime - stime).seconds / 60
-
                 # 0答辩地点    1答辩日期    2答辩时间    3所属专项    4项目编号    5项目名称    6项目负责人    7联系方式    8申报单位    9推荐单位
                 # print(row)
                 pidstr = uuid.uuid4()
                 Meeting(
                     pid=pidstr,
+                    m_lotno=m_lotno,
                     m_room=row[0],
-                    m_date=row[1],
+                    m_date=formatmdate(row[1]),
                     m_guide=row[3],
                     m_number=row[4],
                     m_name=row[5],
@@ -233,7 +247,6 @@ def importExcel(request):
                     m_etime=etime,
                     m_inteval=interval,
                 ).save()
-
             wb.release_resources()
         except BaseException as e:
             print(e.message)
