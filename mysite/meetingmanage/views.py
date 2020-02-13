@@ -94,12 +94,15 @@ def index(request):
     if "POST" == request.method:
         #FIXME 使用FORM来更优雅的处理查询字段
         concat = request.POST
+        m_lotno_s = concat['m_lotno_s']
         m_room_s = concat['m_room_s']
         m_name_s = concat['m_name_s']
         m_guide_s = concat['m_guide_s']
         m_mp_s = concat['m_mp_s']
         m_date1 = concat['m_date1']
         m_date2 = concat['m_date2']
+        
+
         createtime1 = concat['createtime1']
         createtime2 = concat['createtime2']
 
@@ -113,6 +116,7 @@ def index(request):
         # 精确查询
         preparQ(q1, 'm_room', m_room_s)
         # 模糊查询
+        preparQ(q1, 'm_lotno', m_lotno_s, con_suf='__contains')
         preparQ(q1, 'm_name', m_name_s, con_suf='__contains')
         preparQ(q1, 'm_guide', m_guide_s, con_suf='__contains')
         preparQ(q1, 'm_mp', m_mp_s, con_suf='__contains')

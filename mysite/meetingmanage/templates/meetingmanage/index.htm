@@ -38,6 +38,8 @@
 width: 50px;
 
         }
+
+
     </style>
 </head>
 
@@ -58,8 +60,8 @@ width: 50px;
 
        
 
-    <div class="container-fluid" id="searchform">
-        <form class="form-horizontal" method="post">
+    <div class="container-fluid" >
+        <form class="form-horizontal" method="post" id="searchform">
         {% csrf_token %}
             <input type="hidden" name="selectedPid" id="selectedPid">
             <input type="hidden" name="selectedPname" id="selectedPname">
@@ -67,7 +69,7 @@ width: 50px;
                 <label for="m_room" class="col-sm-1">答辩室</label>
                 <div class="col-md-6 col-sm-10">
                     
-                    <select class="form-control elesm"  id="m_room_s" name="m_room_s">
+                    <select class="form-control elesm elesearch"  id="m_room_s" name="m_room_s">
                         <option>上海1</option>
                         <option>上海4</option>
                     </select>
@@ -77,14 +79,14 @@ width: 50px;
             <div class="form-group">
                 <label for="m_room" class="col-sm-1">批次号</label>
                 <div class="col-sm-4">
-                    <input type="text" class="form-control" id="m_lotno_s" name="m_lotno_s" >
+                    <input type="text" class="form-control elesearch" id="m_lotno_s" name="m_lotno_s" >
                     <div class="help-block">模糊匹配</div>
                 </div>
             </div>
             <div class="form-group">
                 <label for="m_room" class="col-sm-1">项目名称</label>
                 <div class="col-sm-4">
-                    <input type="text" class="form-control" id="m_name_s" name="m_name_s" >
+                    <input type="text" class="form-control elesearch" id="m_name_s" name="m_name_s" >
                     <div class="help-block">模糊匹配</div>
                 </div>
             </div>
@@ -92,7 +94,7 @@ width: 50px;
                 <label for="m_room" class="col-sm-1">项目指南</label>
                 <div class="col-sm-4">
                     
-                    <input type="text" class="form-control" id="m_guide_s" name="m_guide_s" >
+                    <input type="text" class="form-control elesearch" id="m_guide_s" name="m_guide_s" >
                     <div class="help-block">模糊匹配</div>
                 </div>
             </div>            
@@ -100,7 +102,7 @@ width: 50px;
                 <label for="m_room" class="col-sm-1">负责人</label>
                 <div class="col-md-6 col-sm-10">
                     
-                    <input type="text" class="form-control elesm" id="m_mp_s"  name="m_mp_s">
+                    <input type="text" class="form-control elesm elesearch" id="m_mp_s"  name="m_mp_s">
                     <div class="help-block">模糊匹配</div>
                 </div>
             </div>                
@@ -108,12 +110,12 @@ width: 50px;
                 <label for="m_date1" class="col-sm-1">答辩日期</label>
                 <div class="col-sm-2"  >
                     
-                    <input type="text" class="form-control " id="m_date1" name="m_date1" >
+                    <input type="text" class="form-control elesearch" id="m_date1" name="m_date1" >
                     <div class="help-block">起始 格式:2020-01-01</div>
                 </div>
                 <div class="col-sm-2"  >
                     
-                    <input type="text" class="form-control " id="m_date2" name="m_date2" >
+                    <input type="text" class="form-control elesearch" id="m_date2" name="m_date2" >
                     <div class="help-block">截止 格式:2020-01-01</div>
                 </div>
                 <div class="col-sm-4"  >
@@ -123,12 +125,12 @@ width: 50px;
                 <label for="createtime1" class="col-sm-1">导入日期</label>
                 <div class="col-sm-2"  >
                     
-                    <input type="text" class="form-control " id="createtime1" name="createtime1">
+                    <input type="text" class="form-control elesearch" id="createtime1" name="createtime1">
                     <div class="help-block">起始 格式:2020-01-01 12:30</div>
                 </div>
                 <div class="col-sm-2"  >
                     
-                    <input type="text" class="form-control " id="createtime2" name="createtime2">
+                    <input type="text" class="form-control elesearch" id="createtime2" name="createtime2">
                     <div class="help-block">起始 格式:2020-01-01 12:30</div>
                 </div>
                 <div class="col-sm-4"  >
@@ -137,9 +139,9 @@ width: 50px;
 
             <div class="form-group">
                 <div class="col-sm-offset-1 col-sm-10">
-                <button type="submit" class="btn btn-default" id="searchsubmit">查询</button>
+                <button type="button" class="btn btn-default" id="searchsubmit">查询</button>
                 &nbsp;
-                <button type="submit" class="btn btn-default" id="exportexcel">导出签到表</button>
+                <button type="button" class="btn btn-default" id="exportexcel">导出签到表</button>
                 
                 </div>
             </div>
@@ -175,7 +177,7 @@ width: 50px;
         <div class="row" id="buttongroup">
             
             <div class="col-md-5">
-                <button class="btn btn-danger" id="delselected">删除选中</button> <button type="button" class="btn  btn-primary" data-toggle="modal" data-target="#myModal">修改</button>
+                <button class="btn btn-danger" id="delselected">删除选中</button> 
             </div>
 
         </div>
@@ -197,8 +199,34 @@ width: 50px;
         </div>
 
         <div id="datagrid_meeting" style="margin-top:10px" class="datagrid">
-            <div class="datagrid-container"></div>
+        <ul class="pager" data-ride="pager" ></ul>    
+         
+        <div class="datagrid-container"></div>
+        
+
+
+                    
+
+    
+
         </div>
+
+
+
+    <ul class="pager">
+    <li class="previous"><a href="your/nice/url">«</a></li>
+    <li  style="float:left;">
+            <select  id="pageselect" class="form-control">
+                            <option>上海1</option>
+                            <option>上海4</option>
+            </select>
+    </li>
+    <li class="next"><a href="your/nice/url">»</a></li>
+    <li  style="float:left;   padding: 5px 4px;">
+    共计8条数据
+    </li>    
+    </ul> 
+
 
     </div>
 
@@ -299,9 +327,6 @@ width: 50px;
             
             
             var tc_jsonarray = {{ tc_json|safe }};
-
-            
-
             document.forms[1].action = "{% url "importExcel" %}";
 
             $('#datagrid_meeting').datagrid({
@@ -330,19 +355,14 @@ width: 50px;
                             {name:'m_time',label:'答辩时间',width:150,className: 'text-center'},
                             {name:'m_inteval',label:'时长(分钟)',className: 'text-center',width:90},
                             {name:'m_mp',label:'负责人',width:80,className: 'text-center'},
-                            {name:'m_mobile',label:'联系方式',width:130},
-                            {name:'createtime',label:'导入时间',className: 'text-center'}
+                            {name:'m_mobile',label:'联系方式',width:130}
                             
 
                         ],
                     array: tc_jsonarray
 
                 }
-            });
-
-
-
-            
+            });            
             $("#importBtn1").click(function () {
                 var fileobj = $('#importExcel')[0].files[0];   //先将jquery对象转换为dom对象
                 var m_lotno = $('#m_lotno').val();   //先将jquery对象转换为dom对象
@@ -401,7 +421,7 @@ width: 50px;
             
             
 
-            $("#datagrid_meeting").on("click",".editbtn",function(){
+            $("#datagrid_meeting").on("click",".editbtn",function(){ // 列表修改按钮
                     //this 为子选择器定位 对象
                 var form = new FormData();
                 form.append('editPid',this.value);
@@ -434,7 +454,7 @@ width: 50px;
                         $('#myModal').modal()
                     },
                     complete:function(request,statuscode){
-                        alert(statuscode)
+                        //alert(statuscode)
 
                     }
 
@@ -451,30 +471,49 @@ width: 50px;
                     console.log("always");
                     console.dir(arguments);
                 });
-                
-            　　　　//$(this).remove();
             }); 
 
-            $("#submitedit").click(function(){
+            $("#submitedit").click(function(){ // 修改模态窗口提交按钮 
                 $("#editform").attr("action","{% url "submitedit" %}");
-                $("#editform")[0].submit()
+                $("#editform").submit()
                 
             })
 
 
 
-            $("#searchsubmit").click(function(){
+            $("#searchsubmit").click(function(){ // 查询按钮
+                storecon();
                 $("#searchform").attr("action","{% url "index" %}");
-                $("#searchform")[0].submit()
+                $("#searchform").submit()
             })
 
+            recovercon()
 
-searchsubmit
 
 
         });
         
+        function storecon(){
+            $(".elesearch").each(function(){ 
+                value = $(this).val()
+                id = $(this).attr('id')
+                sessionStorage.setItem(id,value);//设置b为"isaac"
+                console.log("保存控件:"+id+" 控件值:"+value)
+            });
+        }
 
+        function recovercon(){
+            $(".elesearch").each(function(){ 
+                value = $(this).val()
+                id = $(this).attr('id')
+                value = sessionStorage.getItem(id);
+                if(value){
+                    $(this).val(value)
+                    console.log("还原控件:"+id+" 控件值:"+value)
+                }
+            });
+            
+        }
 
     </script>
 </body>
