@@ -172,8 +172,7 @@
                 var $ = layui.$;
                 var layer = layui.layer
                 var upload = layui.upload;
-                
-                //初始化表格渲染
+                var form = layui.form
                 var tableIns = table.render({ 
                     elem: '#datatable'
                     ,url: '{% url "indexnewquery" %}'
@@ -233,10 +232,11 @@
                                         layer.close(index);        
                                         layer.alert('删除成功,重载数据！')
                                         var conditions = sessionStorage.getItem('rawcondition')?sessionStorage.getItem('rawcondition'):{} 
+                                        var currentpage = sessionStorage.getItem('currentpage')?sessionStorage.getItem('currentpage'):1
                                         tableIns.reload({
                                             where: conditions
                                             ,page: {
-                                                curr: currenttablepage //指向当前页
+                                                curr: currentpage //指向当前页
                                             }
                                         });
                                     }
@@ -256,7 +256,7 @@
                             ,value: data.email
                         }, function(value, index){
                             obj.update({
-                            email: value
+                                email: value
                             });
                             layer.close(index);
                         });
@@ -285,10 +285,7 @@
                                 curr: 1 //重新从第 1 页开始
                             }
                         });
-                        layer.open({
-                            type: 1, 
-                            content: '导入完成！' //这里content是一个普通的String
-                        });
+                        layer.alert('导入完毕,刷新表格！')
                     }
                     ,error: function(){
                     //请求异常回调
@@ -297,16 +294,7 @@
                 //页面表单其他按钮事件集合
                 var active = {// 按钮点击事件集中注册
                     searchsubmit: function(){ //查询处理
-                        var data1 = form.val("searchform");
-                        console.log(data1)
-                        return false
-
-                        var conditions = {}; // 条件对象
-                        $(".ele_search").each(function(){  
-                            value = $(this).val()
-                            id = $(this).attr('id')
-                            conditions[id] = value
-                        });
+                        var conditions = form.val("searchform");
                         sessionStorage.setItem('rawcondition',conditions); //保存原始条件，为保证CSRF刷新不做保存
                         tableIns.reload({
                             where: conditions

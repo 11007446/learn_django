@@ -9,7 +9,7 @@ urlpatterns = [
     path('indexnewquery/', views.indexnewquery, name='indexnewquery'),
     path('delcheckedmeetingdata', views.delcheckedmeetingdata, name='delcheckedmeetingdata'),
     path('importExcel/', views.importExcel, name='importExcel'),
-
+    path('cleardata/', views.cleardata, name='cleardata'),
     # path('index/', views.index, name='index'),
     # path('gendata/', views.gendata, name='gendata'),
     # path('cleardata/', views.cleardata, name='cleardata'),

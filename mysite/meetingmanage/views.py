@@ -5,66 +5,50 @@ from datetime import datetime
 
 from django.http import HttpResponse
 from django.template import loader
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect
 from django.db.models import Q
 from django.urls import reverse
-from django.contrib import messages
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage, InvalidPage
-
 from .models import Meeting
 from . import tests
 
+
 # Create your views here.
-
-
-def gendata(request):
-    tests.genTestData()
-    #FIXME url 硬编码
-    return redirect(reverse("index"))
-
 
 def cleardata(request):
     tests.cleardata()
-    return redirect(reverse("index"))
+    return HttpResponse('数据已清空！')
 
 
-def delmeetings(request, pid):
-    meeting = get_object_or_404(Meeting, pk=int(id))
-    meeting.delete()
-    return redirect(reverse("index"))
-
-
-def delmeeting(request):
-
-    if (request.method == 'POST'):
-
-        concat = request.POST
-        postBody = request.body
-        pids = concat['selectedPid']
-        if (pids):
-            Meeting.objects.filter(pid__in=pids.split(',')).delete()
-            messages.success(request,
-                             "项目 " + concat['selectedPname'] + ' 视频答辩记录 删除成功',
-                             extra_tags='alert-success')
-    return redirect(reverse("index"))
-
-
-def showmeeting(request):
-    # 模态窗口 返回json
-    if (request.method == 'POST'):
-        concat = request.POST
-        selectedPid = concat['editPid']
-        if (selectedPid):
-            meeting = Meeting.objects.get(pid=selectedPid)
-            meetingjson = '{' + '"pid": "{}", "m_guide": "{}", "m_room": "{}", "m_name": "{}", "m_date": "{}", "m_stime": "{}", "m_etime": "{}", "m_inteval": "{}", "m_mp": "{}", "m_mobile": "{}", "m_org": "{}", "m_orgre": "{}"'.format(
-                meeting.pid, meeting.m_guide, meeting.m_room, meeting.m_name,
-                meeting.m_date, meeting.m_stime.strftime("%H:%M"),
-                meeting.m_etime.strftime("%H:%M"), meeting.m_inteval,
-                meeting.m_mp, meeting.m_mobile, meeting.m_org,
-                meeting.m_orgre) + '}'
-        return HttpResponse(meetingjson)
+def formatcelldate(datestr):
+    """[格式化excel单元格日期值]
+    预留该函数应对日后各种日期格式的情况
+    目前只针对 XXXX年XX月XX日 格式
+    Arguments:
+        datestr {[字符串]} -- [description]
+    Returns:
+        [datetime] -- [description]
+    """
+    if('年' in datestr):
+        formatresult = datetime.strptime(datestr, '%Y年%m月%d日')
+    elif('-' in datestr):
+        formatresult = datetime.strptime(datestr, '%Y-%m-%d')
+    elif('/' in datestr):
+        formatresult = datetime.strptime(datestr, '%Y/%m/%d')
     else:
-        return redirect(reverse("index"))
+        formatresult = ""
+    return formatresult
+
+
+def formatcelltext(textstr):
+    """[格式化excel单元格文本值,去除空格、制表符、回车符、换行符]
+    Arguments:
+        textstr {[type]} -- [description]
+    """
+    formattext = ''
+    if(textstr):
+        formatext = textstr.replace(" ", "").replace("\t", "").replace('\n', ' ').replace('\r', ' ')
+    return formatext
 
 
 def preparQ(q, con_name, con_value, con_suf='', func_format=None):
@@ -126,12 +110,12 @@ def indexnewquery(request):
     page = concat.get('page')  # 当前页码
     limit_str = concat.get('limit')  # 当前记录/页
     limit = 10
-    if(limit_str.isdigit()):
+    if(limit_str and limit_str.isdigit()):
         limit = int(limit_str)
     try:
         paginator = Paginator(meetings, limit)
         meetingpage = paginator.page(page)
-    # todo: 注意捕获异常
+    
     except PageNotAnInteger:
         # 如果请求的页数不是整数, 返回第一页。
         meetingpage = paginator.page(1)
@@ -155,105 +139,9 @@ def indexnewquery(request):
                     meeting.m_room, meeting.m_name, meeting.m_date,
                     (meeting.m_stime.strftime("%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
                     meeting.createtime.strftime('%Y-%m-%d %H:%M')) + '}')
-    #FIXME layui数据表格JSON格式，部分内容写死
+    
     jsonstr = '{{"code":0,"msg":"","count":{},"data":[{}]}}'.format(allmeetingcount, ','.join(array_json))
     return HttpResponse(jsonstr)
-
-
-def index(request):
-    #FIXME  url 硬编码
-    template = loader.get_template('meetingmanage/index.htm')
-    tc_json = ''
-    meetinglist = None
-    # POST 点击查询按钮
-    if "POST" == request.method:
-        #FIXME 使用FORM来更优雅的处理查询字段
-        concat = request.POST
-        m_lotno_s = concat['m_lotno_s']
-        m_room_s = concat['m_room_s']
-        m_name_s = concat['m_name_s']
-        m_guide_s = concat['m_guide_s']
-        m_mp_s = concat['m_mp_s']
-        m_date1 = concat['m_date1']
-        m_date2 = concat['m_date2']
-        
-
-        createtime1 = concat['createtime1']
-        createtime2 = concat['createtime2']
-
-        #con_dict = {}  # 条件字典
-        #fillconditiondict(con_dict, '')
-        # Q使用案例 OR: list.filter(Q(pk_ _lt=6) | Q(bcommet_ _gt=10))
-        # Q使用案例 AND: list.filter(Q(pk_ _lt=6) & Q(bcommet_ _gt=10))
-
-        q1 = Q()
-        q1.connector = 'AND'
-        # 精确查询
-        preparQ(q1, 'm_room', m_room_s)
-        # 模糊查询
-        preparQ(q1, 'm_lotno', m_lotno_s, con_suf='__contains')
-        preparQ(q1, 'm_name', m_name_s, con_suf='__contains')
-        preparQ(q1, 'm_guide', m_guide_s, con_suf='__contains')
-        preparQ(q1, 'm_mp', m_mp_s, con_suf='__contains')
-        # 范围查询
-        preparQ(q1, 'm_date', m_date1, con_suf='__gte')
-        preparQ(q1, 'm_date', m_date2, con_suf='__lte')
-
-        # q1.children.append(('m_name__contains', m_name_s))
-        # q1.children.append(('m_guide__contains', m_guide_s))
-        # q1.children.append(('m_mp__contains', m_mp_s))
-        # 范围查询
-        # q1.children.append(('m_name__contains', m_name_s))
-
-        meetinglist = Meeting.objects.filter(q1).order_by(
-            '-m_date', '-m_stime', 'createtime')
-    else:
-        pass
-        meetinglist = Meeting.objects.order_by('-m_date', '-m_stime',
-                                               'createtime')  # 答辩日期 答辩开始时间降序排序
-    array_json = []
-    for meeting in meetinglist:
-        # print(meeting)
-        #FIXME 答辩时间格式化抽取到工具方法中
-        array_json.append(
-            '{' +
-            'pid: "{}", m_guide: "{}", m_lotno: "{}", m_room: "{}", m_name: "{}", m_date: "{}", m_time: "{}", m_inteval: "{}", m_mp: "{}", m_mobile: "{}",  createtime: "{}"'
-            .format(meeting.pid, meeting.m_guide, meeting.m_lotno,
-                    meeting.m_room, meeting.m_name, meeting.m_date,
-                    (meeting.m_stime.strftime("%H:%M") + " - " +
-                     meeting.m_etime.strftime("%H:%M")
-                     ), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
-                    meeting.createtime.strftime('%Y-%m-%d %H:%M')) + '}')
-    tc_json = ','.join(array_json)
-    tc_json = '[{}]'.format(tc_json)
-
-    context = {
-        'tc_json': tc_json,
-        #'meetinglist': meetinglist
-    }
-    return HttpResponse(template.render(context, request))
-
-
-def test(request):
-    #FIXME template url hardcode
-    template = loader.get_template('meetingmanage/testzui.htm')
-    context = {}
-
-    return HttpResponse(template.render(context, request))
-
-
-def formatmdate(mdatestr):
-    """[格式化日期函数]
-    预留该函数应对日后各种日期格式的情况
-    目前只针对 XXXX年XX月XX日 格式
-    Arguments:
-        mdatestr {[字符串]} -- [description]
-    Returns:
-        [datetime] -- [description]
-    """
-    formatresult = datetime.strptime(mdatestr, '%Y年%m月%d日')
-    return formatresult
-
 
 
 def submitedit(request):
@@ -296,7 +184,7 @@ def importExcel(request):
             now = datetime.now()
             for rowindex in range(1, total_rows):  # 跳过首行标题
                 row = table.row_values(rowindex)
-                timestr = row[2]
+                timestr = formatcelltext(row[2])
                 stime = None
                 etime = None
                 interval = 0
@@ -309,23 +197,25 @@ def importExcel(request):
                 # 0答辩地点    1答辩日期    2答辩时间    3所属专项    4项目编号    5项目名称    6项目负责人    7联系方式    8申报单位    9推荐单位
                 # print(row)
                 pidstr = uuid.uuid4()
-                Meeting(
+                meeting = Meeting(
                     pid=pidstr,
                     m_lotno=m_lotno,
-                    m_room=row[0],
-                    m_date=formatmdate(row[1]),
-                    m_guide=row[3],
-                    m_number=row[4],
-                    m_name=row[5],
-                    m_mp=row[6],
-                    m_mobile=row[7],
-                    m_org=row[8],
-                    m_orgre=row[9],
+                    m_room=formatcelltext(row[0]),
+                    m_date=formatcelldate(row[1]),
+                    m_guide=formatcelldate(row[3]),
+                    m_number=formatcelldate(row[4]),
+                    m_name=formatcelldate(row[5]),
+                    m_mp=formatcelldate(row[6]),
+                    m_mobile=formatcelldate(row[7]),
+                    m_org=formatcelldate(row[8]),
+                    m_orgre=formatcelldate(row[9]),
                     createtime=now,
                     m_stime=stime,
                     m_etime=etime,
                     m_inteval=interval,
-                ).save()
+                )
+                print(meeting)
+                meeting.save()
             wb.release_resources()
         except RuntimeError as e:
             print("导入出错: {0}".format(e))
