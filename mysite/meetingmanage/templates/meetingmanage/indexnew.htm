@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'meetingmanage/jslib/layui/css/layui.css' %}">
+    <style>
+        .maincontainer {
+            width:90%;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body class="layui-layout-body">
+    <div id="updatediv" style="display:none">
+        <form id="updateform"  class="layui-form" >
+            {% csrf_token %}
+            <input type="hidden" name="editPid" id="editPid">
+            <div class="layui-form-item">
+                <label class="layui-form-label">答辩室</label>
+                <div class="layui-input-block " style="width: 100px;">
+                    <select name="m_room" id="m_room">
+                        <option value=""></option>
+                        <option value="上海1">上海1</option>
+                        <option value="上海4">上海4</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">项目名称</label>
+                <div class="layui-input-block" style="width: 500px;">
+                    <input type="text" id="m_name" name="m_name" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">项目指南</label>
+                <div class="layui-input-block" style="width: 500px;">
+                    <input type="text" id="m_guide" name="m_guide" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">负责人</label>
+                <div class="layui-input-block" style="width: 500px;">
+                    <input type="text" id="m_mp" name="m_mp" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">联系方式</label>
+                <div class="layui-input-block" style="width: 500px;">
+                    <input type="text" id="m_mp" name="m_mp" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">负责人</label>
+                <div class="layui-input-block" style="width: 500px;">
+                    <input type="text" id="m_mp" name="m_mp" class="layui-input">
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="maincontainer">
+        <fieldset class="layui-elem-field">
+            <legend>查询</legend>
+            <div class="layui-field-box">
+                <form id="searchform"  class="layui-form layui-form-pane" lay-filter="searchform"  >
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">答辩室</label>
+                        <div class="layui-input-block " style="width: 100px;">
+                            <select name="m_room_s" id="m_room_s" class="ele_search">
+                                <option value=""></option>
+                                <option value="上海1">上海1</option>
+                                <option value="上海4">上海4</option>
+
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">批次号</label>
+                        <div class="layui-input-block" style="width: 500px;">
+                        <input type="text" id="m_lotno_s" name="m_lotno_s" class="layui-input ele_search" placeholder="模糊匹配" >
+                        </div>
+                    </div>
+
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">项目名称</label>
+                        <div class="layui-input-block" style="width: 500px;">
+                        <input type="text" id="m_name_s" name="m_name_s" class="layui-input ele_search" placeholder="模糊匹配" >
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">项目指南</label>
+                        <div class="layui-input-block" style="width: 500px;">
+                        <input type="text" id="m_guide_s" name="m_guide_s" class="layui-input ele_search" placeholder="模糊匹配" >
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">负责人</label>
+                        <div class="layui-input-block" style="width: 500px;">
+                        <input type="text" id="m_mp_s"  name="m_mp_s" class="layui-input ele_search" placeholder="模糊匹配" >
+                        </div>
+                    </div>        
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">答辩日期</label>
+                        <div class="layui-input-inline" style="width: 200px;">
+                        <input type="text" name="m_date1" id="m_date1" placeholder="大等于 例：2020-01-01" class="layui-input ele_search">
+                        </div>
+                        <div class="layui-form-mid">-</div>
+                        <div class="layui-input-inline" style="width: 200px;">
+                        <input type="text" name="m_date2" id="m_date2" placeholder="小等于 例：2020-01-01" class="layui-input ele_search">
+                        </div>
+                    </div>        
+                    <div class="layui-btn-group">
+                        
+                        <button type="button" id="searchsubmit" data-method="searchsubmit"  class="layui-btn layui-anim">查询</button> 
+                        <button type="button" class="layui-btn" >重置</button>
+                        
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <fieldset class="layui-elem-field">
+                <legend>视频答辩清单、签到表管理</legend>
+                <div class="layui-field-box">
+                <form id="uploadform"  class="layui-form layui-form-pane" >
+                    <div class="layui-inline">
+                        <label class="layui-form-label">批次号</label>
+                        <div class="layui-input-inline" style="width:150px;">
+                            <input type="text" id="m_lotno" name="m_lotno" class="layui-input">
+                        </div>
+                        <div class="layui-btn-group">
+                            <button type="button" class="layui-btn layui-input-inline" id="importbtn">
+                                <i class="layui-icon">&#xe67c;</i>导入EXCEL清单
+                            </button>
+                            <button type="button" class="layui-btn layui-input-inline" lay-event="exportData" >
+                                <i class="layui-icon layui-icon-export"></i>导出答辩签到表
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                </div>
+        </fieldset>     
+        
+
+        <table id="datatable" lay-filter="meetinglist"></table>
+
+        <script src="{% static 'meetingmanage/jslib/layui/layui.js' %}"></script>
+
+        <script type="text/html" id="rowbar">
+            <a class="layui-btn layui-btn-xs" lay-event="editData" >
+                <i class="layui-icon layui-icon-edit"></i>
+            </a>
+        </script>
+        <script type="text/html" id="headbar">
+            <div class="layui-btn-container">
+                <button type="button" class="layui-btn layui-btn-primary" lay-event="delCheckedData">
+                    <i class="layui-icon layui-icon-delete"></i>删除选中记录
+                </button>
+            </div>
+        </script>
+
+        <script>
+            
+            layui.use(['table', 'jquery', 'layer', 'upload', 'form'], function(){
+                var table = layui.table;
+                var $ = layui.$;
+                var layer = layui.layer
+                var upload = layui.upload;
+                
+                //初始化表格渲染
+                var tableIns = table.render({ 
+                    elem: '#datatable'
+                    ,url: '{% url "indexnewquery" %}'
+                    ,loading: true
+                    ,toolbar: '#headbar' //开启头部工具栏，并为其绑定左侧模板
+                    ,defaultToolbar: false //不显示头部工具栏右侧默认按钮
+                    ,height: '500'
+                    ,cols: [[ //表头
+                         {type:'checkbox'}
+                        ,{type:'numbers'}
+                        ,{field: 'm_lotno', title: '批次号'}
+                        ,{field: 'm_room', title: '答辩室'}
+                        ,{field: 'm_name', title: '项目名称', width:150}
+                        ,{field: 'm_guide', title: '所属专题', width:150}
+                        ,{field: 'm_date', title: '答辩日期'}
+                        ,{field: 'm_time', title: '答辩时间'}
+                        ,{field: 'm_inteval', title: '时长'}
+                        ,{field: 'm_mp', title: '负责人'}
+                        ,{field: 'm_mobile', title: '联系方式'}
+                        ,{fixed: 'right', title:'操作', toolbar: '#rowbar'} //这里的toolbar值是模板元素的选择器
+                    ]]
+                    ,page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    , done: function(res, curr, count){
+                        sessionStorage.setItem('currentpage',curr); //表格渲染完毕,保存记录当前页码
+                    }
+                });
+
+                //表头工具栏事件绑定
+                table.on('toolbar(meetinglist)', function(obj){
+                    var checkDatas = table.checkStatus(obj.config.id).data;
+                    switch(obj.event){
+                        //删除操作
+                        case 'delCheckedData':
+                            if(checkDatas.length===0){ // 如未选中则,停止操作
+                                return false;
+                            }
+                            layer.confirm('确认删除选中数据吗？', function(index){
+                                checkedids = []
+                                for(var i=0;i<checkDatas.length;i++){
+                                    if(checkDatas[i]){
+                                        checkedids.push(checkDatas[i].pid)
+                                    }
+                                }
+                                var form = new FormData();
+                                form.append("checkedPid", checkedids.join(','));
+                                form.append("csrfmiddlewaretoken", '{{ csrf_token  }}');
+                                $.ajax({
+                                    url: '{% url "delcheckedmeetingdata" %}',
+                                    type: 'POST',
+                                    processData:false,
+                                    contentType:false,
+                                    dataType: 'json',
+                                    data: form,
+                                    success: function(returndata){
+                                        layer.close(index);        
+                                        layer.alert('删除成功,重载数据！')
+                                        var conditions = sessionStorage.getItem('rawcondition')?sessionStorage.getItem('rawcondition'):{} 
+                                        tableIns.reload({
+                                            where: conditions
+                                            ,page: {
+                                                curr: currenttablepage //指向当前页
+                                            }
+                                        });
+                                    }
+                                })
+                            });                            
+                        break;
+                    };
+                });
+                
+                //行工具事件绑定
+                table.on('tool(meetinglist)', function(obj){
+                    var data = obj.data;
+                    //console.log(obj)
+                    if(obj.event === 'editData'){
+                        layer.prompt({
+                            formType: 2
+                            ,value: data.email
+                        }, function(value, index){
+                            obj.update({
+                            email: value
+                            });
+                            layer.close(index);
+                        });
+                    }
+                })
+
+                //文件上传事件绑定
+                var uploadInst = upload.render({
+                    elem: '#importbtn' //绑定元素
+                    ,url: '{% url "importExcel" %}'
+                    ,data: {
+                        m_lotno: function(){
+                            return $('#m_lotno').val();
+                        }
+                        ,csrfmiddlewaretoken: '{{ csrf_token  }}'
+                    }
+                    ,accept: 'file' //允许上传所有类型文件
+                    ,acceptMime: 'file/xlsx'
+                    ,field:'importExcel'
+                    ,ext: 'xlsx'
+                    ,done: function(res){//上传成功后, 表格内容重载, 显示成功信息
+                        tableIns.reload({
+                            where: {csrfmiddlewaretoken: '{{ csrf_token  }}'}
+                            ,method: 'post'
+                            ,page: {
+                                curr: 1 //重新从第 1 页开始
+                            }
+                        });
+                        layer.open({
+                            type: 1, 
+                            content: '导入完成！' //这里content是一个普通的String
+                        });
+                    }
+                    ,error: function(){
+                    //请求异常回调
+                    }
+                });
+                //页面表单其他按钮事件集合
+                var active = {// 按钮点击事件集中注册
+                    searchsubmit: function(){ //查询处理
+                        var data1 = form.val("searchform");
+                        console.log(data1)
+                        return false
+
+                        var conditions = {}; // 条件对象
+                        $(".ele_search").each(function(){  
+                            value = $(this).val()
+                            id = $(this).attr('id')
+                            conditions[id] = value
+                        });
+                        sessionStorage.setItem('rawcondition',conditions); //保存原始条件，为保证CSRF刷新不做保存
+                        tableIns.reload({
+                            where: conditions
+                            ,page: {
+                                curr: 1 //重新从第 1 页开始
+                            }
+                        });
+                    }
+                }
+                //页面表单其他按钮事件绑定
+                $('.layui-btn').on('click', function(){
+                    var othis = $(this);
+                    var method = othis.data('method');
+                    active[method] ? active[method].call(this, othis) : '';
+                });
+            });    
+        </script>
+    </div>
+    <div class="layui-footer maincontainer">
+        © layui.com - 底部固定区域
+    </div>
+</body>
+
+
+</html>

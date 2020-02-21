@@ -1,14 +1,16 @@
 #from django.shortcuts import render
 import xlrd
 import uuid
-
 from datetime import datetime
+
 from django.http import HttpResponse
 from django.template import loader
 from django.shortcuts import redirect, get_object_or_404
 from django.db.models import Q
 from django.urls import reverse
 from django.contrib import messages
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage, InvalidPage
+
 from .models import Meeting
 from . import tests
 
@@ -83,6 +85,79 @@ def preparQ(q, con_name, con_value, con_suf='', func_format=None):
         else:
             q.children.append((con_name + con_suf, con_value))
     return q
+
+
+def delcheckedmeetingdata(request):
+    if (request.method == 'POST'):
+        concat = request.POST
+        pids = concat['checkedPid']
+        if (pids):
+            Meeting.objects.filter(pid__in=pids.split(',')).delete()
+            message = '删除成功'
+    reponsestr = '{"code":"0"}'
+    return HttpResponse(reponsestr)
+
+
+def indexlayui(request):
+    template = loader.get_template('meetingmanage/indexnew.htm')
+    context = {}
+    return HttpResponse(template.render(context, request))
+
+
+def indexnewquery(request):
+    meetings = None
+    # if "POST" == request.method:  # 条件查询
+    concat = request.GET
+    # concat['m_room_s'] 如果key对应的值为空，会抛出Keyerror错误
+    # concat.get('key') 如果key对应的值为空，返回 None
+
+    # 条件查询
+    q1 = Q()
+    q1.connector = 'AND'
+    preparQ(q1, 'm_room', concat.get('m_room_s'))
+    preparQ(q1, 'm_lotno', concat.get('m_lotno_s'), con_suf='__contains')
+    preparQ(q1, 'm_name', concat.get('m_name_s'), con_suf='__contains')
+    preparQ(q1, 'm_guide', concat.get('m_guide_s'), con_suf='__contains')
+    preparQ(q1, 'm_mp', concat.get('m_mp_s'), con_suf='__contains')
+    preparQ(q1, 'm_date', concat.get('m_date1'), con_suf='__gte')
+    preparQ(q1, 'm_date', concat.get('m_date2'), con_suf='__lte')
+    meetings = Meeting.objects.filter(q1).order_by('createtime')
+    # 分页处理
+    page = concat.get('page')  # 当前页码
+    limit_str = concat.get('limit')  # 当前记录/页
+    limit = 10
+    if(limit_str.isdigit()):
+        limit = int(limit_str)
+    try:
+        paginator = Paginator(meetings, limit)
+        meetingpage = paginator.page(page)
+    # todo: 注意捕获异常
+    except PageNotAnInteger:
+        # 如果请求的页数不是整数, 返回第一页。
+        meetingpage = paginator.page(1)
+    except InvalidPage:
+        # 如果请求的页数不存在, 返回结果的最后一页。
+        meetingpage = paginator.page(paginator.num_pages)
+    except EmptyPage:
+        # 如果请求的页数不在合法的页数范围内，返回结果的最后一页。
+        meetingpage = paginator.page(paginator.num_pages)
+
+
+    # layui 数据表格数据源格式化
+    array_json = []
+    jsonstr = ""
+    allmeetingcount = len(meetings)
+    for meeting in meetingpage:
+        array_json.append(
+            '{' +
+            '"pid": "{}", "m_guide": "{}", "m_lotno": "{}", "m_room": "{}", "m_name": "{}", "m_date": "{}", "m_time": "{}", "m_inteval": "{}", "m_mp": "{}", "m_mobile": "{}", "createtime": "{}"'
+            .format(meeting.pid, meeting.m_guide, meeting.m_lotno,
+                    meeting.m_room, meeting.m_name, meeting.m_date,
+                    (meeting.m_stime.strftime("%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
+                    meeting.createtime.strftime('%Y-%m-%d %H:%M')) + '}')
+    #FIXME layui数据表格JSON格式，部分内容写死
+    jsonstr = '{{"code":0,"msg":"","count":{},"data":[{}]}}'.format(allmeetingcount, ','.join(array_json))
+    return HttpResponse(jsonstr)
 
 
 def index(request):
@@ -210,12 +285,12 @@ def importExcel(request):
     if "GET" == request.method:
         return redirect("/meetingmanage/")
     elif "POST" == request.method:
+        wb = None
         try:
             concat = request.POST
             m_lotno = concat['m_lotno']
             excel_file = request.FILES['importExcel']
-            wb = xlrd.open_workbook(filename=None,
-                                    file_contents=excel_file.read())
+            wb = xlrd.open_workbook(filename=None, file_contents=excel_file.read())
             table = wb.sheets()[0]
             total_rows = table.nrows  # 拿到总共行数
             now = datetime.now()
@@ -252,9 +327,9 @@ def importExcel(request):
                     m_inteval=interval,
                 ).save()
             wb.release_resources()
-        except BaseException as e:
-            print(e.message)
-            return HttpResponse('fail')
+        except RuntimeError as e:
+            print("导入出错: {0}".format(e))
+            return HttpResponse('{"code":"1"}')
         finally:
             del wb
-    return redirect(reverse("index"))
+    return HttpResponse('{"code":"0"}')

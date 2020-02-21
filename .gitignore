@@ -8,4 +8,7 @@
 /.vscode/settings.json
 /mysite/meetingmanage/static/meetingmanage/jslib/文档与示例
 *.pyc
-
+*.xls
+*.xlsx
+Pipfile
+Pipfile.lock

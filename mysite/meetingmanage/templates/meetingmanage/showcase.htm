@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+单独控件 一行一个
+<div class="layui-form-item">
+    <label class="layui-form-label">负责人</label>
+    <div class="layui-input-block">
+    <input type="text" id="m_mp_s"  name="m_mp_s" class="layui-input" placeholder="模糊匹配" >
+    </div>
+    <div class="layui-form-mid layui-word-aux">辅助文字在此输入</div>
+</div>        
+
+一行多个控件
+
+<div class="layui-form-item">
+    <label class="layui-form-label">答辩日期</label>
+    <div class="layui-input-inline" style="width: 100px;">
+    <input type="text" name="price_min" placeholder="￥" autocomplete="off" class="layui-input">
+    </div>
+    <div class="layui-form-mid">-</div>
+    <div class="layui-input-inline" style="width: 100px;">
+    <input type="text" name="price_max" placeholder="￥" autocomplete="off" class="layui-input">
+    </div>
+</div>
+<scirpt>
+    使用jquery
+    layui.use('jquery', function(){
+      var $ = layui.$;
+      
+      //演示动画
+      $('.site-doc-icon .layui-anim').on('click', function(){
+        var othis = $(this), anim = othis.data('anim');
+     
+        //停止循环
+        if(othis.hasClass('layui-anim-loop')){
+          return othis.removeClass(anim);
+        }
+        
+        othis.removeClass(anim);
+        
+        setTimeout(function(){
+          othis.addClass(anim);
+        });
+        //恢复渐隐
+        if(anim === 'layui-anim-fadeout'){
+          setTimeout(function(){
+            othis.removeClass(anim);
+          }, 1300);
+        }
+      });
+    });
+    </scirpt>
+</body>
+</html>
