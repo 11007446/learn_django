@@ -14,9 +14,9 @@
     </style>
 </head>
 <body class="layui-layout-body">
-    <div id="updatediv" style="display:none">
-        <form id="updateform"  class="layui-form" >
-            {% csrf_token %}
+    <div id="updatediv" style="display:none" class="maincontainer">
+
+        <form id="updateform"  class="layui-form layui-form-pane" lay-filter="updateform">
             <input type="hidden" name="editPid" id="editPid">
             <div class="layui-form-item">
                 <label class="layui-form-label">答辩室</label>
@@ -41,6 +41,12 @@
                 </div>
             </div>
             <div class="layui-form-item">
+                <label class="layui-form-label">申报单位</label>
+                <div class="layui-input-block" style="width: 500px;">
+                    <input type="text" id="m_org" name="m_org" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
                 <label class="layui-form-label">负责人</label>
                 <div class="layui-input-block" style="width: 500px;">
                     <input type="text" id="m_mp" name="m_mp" class="layui-input">
@@ -49,14 +55,29 @@
             <div class="layui-form-item">
                 <label class="layui-form-label">联系方式</label>
                 <div class="layui-input-block" style="width: 500px;">
-                    <input type="text" id="m_mp" name="m_mp" class="layui-input">
+                    <input type="text" id="m_mobile" name="m_mobile" class="layui-input">
                 </div>
             </div>
             <div class="layui-form-item">
-                <label class="layui-form-label">负责人</label>
+                <label class="layui-form-label">答辩日期</label>
                 <div class="layui-input-block" style="width: 500px;">
-                    <input type="text" id="m_mp" name="m_mp" class="layui-input">
+                    <input type="text" id="m_date" name="m_date" class="layui-input">
                 </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">答辩时间</label>
+                <div class="layui-input-inline" style="width: 200px;">
+                <input type="text" name="m_stime" id="m_stime" placeholder="开始时间 例：12:00:00" class="layui-input">
+                </div>
+                <div class="layui-form-mid">-</div>
+                <div class="layui-input-inline" style="width: 200px;">
+                <input type="text" name="m_etime" id="m_etime" placeholder="结束时间 例：12:00:00" class="layui-input">
+                </div>
+            </div> 
+            <div class="layui-btn-group">
+                
+                <button type="button" id="updatesubmit" data-method="updatesubmit"  class="layui-btn layui-anim">提交修改</button> 
+                
             </div>
         </form>
     </div>
@@ -125,197 +146,269 @@
                 </form>
             </div>
         </fieldset>
-        <fieldset class="layui-elem-field">
-                <legend>视频答辩清单、签到表管理</legend>
-                <div class="layui-field-box">
-                <form id="uploadform"  class="layui-form layui-form-pane" >
-                    <div class="layui-inline">
-                        <label class="layui-form-label">批次号</label>
-                        <div class="layui-input-inline" style="width:150px;">
-                            <input type="text" id="m_lotno" name="m_lotno" class="layui-input">
-                        </div>
-                        <div class="layui-btn-group">
-                            <button type="button" class="layui-btn layui-input-inline" id="importbtn">
-                                <i class="layui-icon">&#xe67c;</i>导入EXCEL清单
-                            </button>
-                            <button type="button" class="layui-btn layui-input-inline" lay-event="exportData" >
-                                <i class="layui-icon layui-icon-export"></i>导出答辩签到表
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                </div>
-        </fieldset>     
-        
 
         <table id="datatable" lay-filter="meetinglist"></table>
 
-        <script src="{% static 'meetingmanage/jslib/layui/layui.js' %}"></script>
 
-        <script type="text/html" id="rowbar">
-            <a class="layui-btn layui-btn-xs" lay-event="editData" >
-                <i class="layui-icon layui-icon-edit"></i>
-            </a>
-        </script>
-        <script type="text/html" id="headbar">
-            <div class="layui-btn-container">
-                <button type="button" class="layui-btn layui-btn-primary" lay-event="delCheckedData">
-                    <i class="layui-icon layui-icon-delete"></i>删除选中记录
-                </button>
-            </div>
-        </script>
+    </div>
 
-        <script>
-            
-            layui.use(['table', 'jquery', 'layer', 'upload', 'form'], function(){
-                var table = layui.table;
-                var $ = layui.$;
-                var layer = layui.layer
-                var upload = layui.upload;
-                var form = layui.form
-                var tableIns = table.render({ 
-                    elem: '#datatable'
-                    ,url: '{% url "indexnewquery" %}'
-                    ,loading: true
-                    ,toolbar: '#headbar' //开启头部工具栏，并为其绑定左侧模板
-                    ,defaultToolbar: false //不显示头部工具栏右侧默认按钮
-                    ,height: '500'
-                    ,cols: [[ //表头
-                         {type:'checkbox'}
-                        ,{type:'numbers'}
-                        ,{field: 'm_lotno', title: '批次号'}
-                        ,{field: 'm_room', title: '答辩室'}
-                        ,{field: 'm_name', title: '项目名称', width:150}
-                        ,{field: 'm_guide', title: '所属专题', width:150}
-                        ,{field: 'm_date', title: '答辩日期'}
-                        ,{field: 'm_time', title: '答辩时间'}
-                        ,{field: 'm_inteval', title: '时长'}
-                        ,{field: 'm_mp', title: '负责人'}
-                        ,{field: 'm_mobile', title: '联系方式'}
-                        ,{fixed: 'right', title:'操作', toolbar: '#rowbar'} //这里的toolbar值是模板元素的选择器
-                    ]]
-                    ,page: {
-                        curr: 1 //重新从第 1 页开始
-                    }
-                    , done: function(res, curr, count){
-                        sessionStorage.setItem('currentpage',curr); //表格渲染完毕,保存记录当前页码
-                    }
-                });
+    <script src="{% static 'meetingmanage/jslib/layui/layui.js' %}"></script>
 
-                //表头工具栏事件绑定
-                table.on('toolbar(meetinglist)', function(obj){
-                    var checkDatas = table.checkStatus(obj.config.id).data;
-                    switch(obj.event){
-                        //删除操作
-                        case 'delCheckedData':
-                            if(checkDatas.length===0){ // 如未选中则,停止操作
-                                return false;
-                            }
-                            layer.confirm('确认删除选中数据吗？', function(index){
-                                checkedids = []
-                                for(var i=0;i<checkDatas.length;i++){
-                                    if(checkDatas[i]){
-                                        checkedids.push(checkDatas[i].pid)
-                                    }
-                                }
-                                var form = new FormData();
-                                form.append("checkedPid", checkedids.join(','));
-                                form.append("csrfmiddlewaretoken", '{{ csrf_token  }}');
-                                $.ajax({
-                                    url: '{% url "delcheckedmeetingdata" %}',
-                                    type: 'POST',
-                                    processData:false,
-                                    contentType:false,
-                                    dataType: 'json',
-                                    data: form,
-                                    success: function(returndata){
-                                        layer.close(index);        
-                                        layer.alert('删除成功,重载数据！')
-                                        var conditions = sessionStorage.getItem('rawcondition')?sessionStorage.getItem('rawcondition'):{} 
-                                        var currentpage = sessionStorage.getItem('currentpage')?sessionStorage.getItem('currentpage'):1
-                                        tableIns.reload({
-                                            where: conditions
-                                            ,page: {
-                                                curr: currentpage //指向当前页
-                                            }
-                                        });
-                                    }
-                                })
-                            });                            
-                        break;
-                    };
-                });
-                
-                //行工具事件绑定
-                table.on('tool(meetinglist)', function(obj){
-                    var data = obj.data;
-                    //console.log(obj)
-                    if(obj.event === 'editData'){
-                        layer.prompt({
-                            formType: 2
-                            ,value: data.email
-                        }, function(value, index){
-                            obj.update({
-                                email: value
-                            });
-                            layer.close(index);
-                        });
-                    }
-                })
+    <script type="text/html" id="rowbar">
+        <button type="button" class="layui-btn layui-btn-xs" lay-event="editData" >
+            <i class="layui-icon layui-icon-edit"></i>
+        </button>
+    </script>
+    <script type="text/html" id="headbar">
+        <div class="layui-field-box">
+            <form id="lotnoform"  class="layui-form layui-form-pane" >
+            {% csrf_token %}
+                <div class="layui-inline">
+                    <label class="layui-form-label">批次号</label>
+                    <div class="layui-input-inline" style="width:150px;">
+                        <input type="text" id="m_lotno" name="m_lotno" class="layui-input">
+                    </div>
+                    <div class="layui-btn-group">
+                        <button type="button" class="layui-btn layui-btn-primary layui-input-inline" id="importbtn">
+                            <i class="layui-icon layui-icon-upload" id="importicon" ></i>导入EXCEL清单
+                        </button>
+                        <button type="button" class="layui-btn layui-btn-primary layui-input-inline" lay-event="exportData" >
+                            <i class="layui-icon layui-icon-export"></i>导出答辩签到表
+                        </button>
+                        &nbsp;
+                        <button type="button" class="layui-btn layui-btn-primary layui-input-inline" lay-event="delCheckedData">
+                            <i class="layui-icon layui-icon-delete"></i>删除选中记录
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </script>
 
-                //文件上传事件绑定
-                var uploadInst = upload.render({
-                    elem: '#importbtn' //绑定元素
-                    ,url: '{% url "importExcel" %}'
-                    ,data: {
-                        m_lotno: function(){
-                            return $('#m_lotno').val();
-                        }
-                        ,csrfmiddlewaretoken: '{{ csrf_token  }}'
-                    }
-                    ,accept: 'file' //允许上传所有类型文件
-                    ,acceptMime: 'file/xlsx'
-                    ,field:'importExcel'
-                    ,ext: 'xlsx'
-                    ,done: function(res){//上传成功后, 表格内容重载, 显示成功信息
-                        tableIns.reload({
-                            where: {csrfmiddlewaretoken: '{{ csrf_token  }}'}
-                            ,method: 'post'
-                            ,page: {
-                                curr: 1 //重新从第 1 页开始
-                            }
-                        });
-                        layer.alert('导入完毕,刷新表格！')
-                    }
-                    ,error: function(){
-                    //请求异常回调
-                    }
-                });
-                //页面表单其他按钮事件集合
-                var active = {// 按钮点击事件集中注册
-                    searchsubmit: function(){ //查询处理
-                        var conditions = form.val("searchform");
-                        sessionStorage.setItem('rawcondition',conditions); //保存原始条件，为保证CSRF刷新不做保存
-                        tableIns.reload({
-                            where: conditions
-                            ,page: {
-                                curr: 1 //重新从第 1 页开始
-                            }
-                        });
-                    }
+    <script>
+        
+        layui.use(['table', 'jquery', 'layer', 'upload', 'form'], function(){
+            var table = layui.table;
+            var $ = layui.$;
+            var layer = layui.layer
+            var upload = layui.upload;
+            var form = layui.form
+            var tableIns = table.render({ 
+                elem: '#datatable'
+                ,url: '{% url "indexnewquery" %}'
+                ,loading: true
+                ,toolbar: '#headbar' //开启头部工具栏，并为其绑定左侧模板
+                ,defaultToolbar: false //不显示头部工具栏右侧默认按钮
+                ,height: '550'
+                ,cols: [[ //表头
+                        {type:'checkbox'}
+                    ,{type:'numbers'}
+                    ,{field: 'm_lotno', title: '批次号'}
+                    ,{field: 'm_room', title: '答辩室'}
+                    ,{field: 'm_name', title: '项目名称', width:150}
+                    ,{field: 'm_guide', title: '所属专题', width:150}
+                    ,{field: 'm_date', title: '答辩日期'}
+                    ,{field: 'm_time', title: '答辩时间'}
+                    ,{field: 'm_inteval', title: '时长'}
+                    ,{field: 'm_mp', title: '负责人'}
+                    ,{field: 'm_mobile', title: '联系方式'}
+                    ,{fixed: 'right', title:'操作', toolbar: '#rowbar'} //这里的toolbar值是模板元素的选择器
+                ]]
+                ,page: {
+                    curr: 1 //重新从第 1 页开始
                 }
-                //页面表单其他按钮事件绑定
-                $('.layui-btn').on('click', function(){
-                    var othis = $(this);
-                    var method = othis.data('method');
-                    active[method] ? active[method].call(this, othis) : '';
+                , done: function(res, curr, count){
+                    putstorage('currentpage',curr); //表格渲染完毕,保存记录当前页码
+                }
+            });
+
+            //表头工具栏事件绑定 删除记录
+            table.on('toolbar(meetinglist)', function(obj){
+                var checkDatas = table.checkStatus(obj.config.id).data;
+                switch(obj.event){
+                    //删除操作
+                    case 'delCheckedData':
+                        if(checkDatas.length===0){ // 如未选中则,停止操作
+                            return false;
+                        }
+                        layer.confirm('确认删除选中数据吗？', function(index){
+                            checkedids = []
+                            for(var i=0;i<checkDatas.length;i++){
+                                if(checkDatas[i]){
+                                    checkedids.push(checkDatas[i].pid)
+                                }
+                            }
+                            var form = {}
+                            form["checkedPid"] = checkedids.join(',');
+                            form["csrfmiddlewaretoken"] = '{{ csrf_token  }}';
+                            $.ajax({
+                                url: '{% url "delcheckedmeetingdata" %}',
+                                type: 'POST',
+                                data: form,
+                                datatype:'json',
+                                success: function(returndata){
+                                    layer.close(index);        
+                                    layer.alert('删除成功,重载数据！')
+                                    var conditions = popstorage('rawcondition')?popstorage('rawcondition'):{} 
+                                    var currentpage = popstorage('currentpage')?popstorage('currentpage'):1
+                                    tableIns.reload({
+                                        where: conditions
+                                        ,page: {
+                                            curr: currentpage //指向当前页
+                                        }
+                                    });
+                                }
+                            })
+                        });                            
+                    break;
+                    case 'exportData':
+                        $('#lotnoform').attr('action','{% url "downloadsigninsheet" %}')
+                        $('#lotnoform').attr('method','POST')
+                        $('#lotnoform').submit()
+                    break;
+                };
+            });
+            
+            //行工具事件绑定
+            table.on('tool(meetinglist)', function(obj){
+                var data = obj.data;
+                // 表单赋值
+                form.val("updateform", { //formTest 即 class="layui-form" 所在元素属性 lay-filter="" 对应的值
+                    "editPid": data.pid
+                    ,"m_room": data.m_room // "name": "value"
+                    ,"m_name": data.m_name
+                    ,"m_guide": data.m_guide
+                    ,"m_mp": data.m_mp
+                    ,"m_mobile": data.m_mobile
+                    ,"m_org": data.m_org
+                    ,"m_date": data.m_date
+                    ,"m_stime": data.m_stime
+                    ,"m_etime": data.m_etime
                 });
-            });    
-        </script>
-    </div>
-    <div class="layui-footer maincontainer">
-        © layui.com - 底部固定区域
-    </div>
+                                    
+                if(obj.event === 'editData'){
+                    layer.open({
+                        type: 1
+                        ,title: '视频答辩信息修改'
+                        ,content: $('#updatediv')    
+                        ,area: ['800px', '550px']
+                    });
+                    $('#updatediv').show()
+                    
+                }
+            })
+
+            //文件上传事件绑定
+            var uploadInst = upload.render({
+                elem: '#importbtn' //绑定元素
+                ,url: '{% url "importExcel" %}'
+                ,data: {
+                    m_lotno: function(){
+                        return $('#m_lotno').val();
+                    }
+                    ,csrfmiddlewaretoken: '{{ csrf_token  }}'
+                }
+                ,accept: 'file' //允许上传所有类型文件
+                ,acceptMime: 'file/xlsx'
+                ,field:'importExcel'
+                ,ext: 'xlsx'
+                ,before: function(obj){
+                    btnclickloading('import','layui-icon-upload',true);
+                }
+                ,done: function(res){//上传成功后, 表格内容重载, 显示成功信息
+                    tableIns.reload({
+                        page: {
+                            curr: 1 //重新从第 1 页开始
+                        }
+                    });
+                    layer.alert('数据导入完毕,刷新表格！')
+                    btnclickloading('import','layui-icon-upload',false)
+                }
+                ,error: function(){
+                    layer.alert('数据导入失败,请检查后台日志！')
+                }
+            });
+            //页面表单其他按钮事件集合
+            var active = {// 按钮点击事件集中注册
+                searchsubmit: function(){ //查询处理
+                    var conditions = form.val("searchform");
+                    //conditions["csrfmiddlewaretoken"] = '{{ csrf_token  }}'
+                    putstorage('rawcondition',conditions); //保存原始条件，为保证CSRF刷新不做保存
+                    tableIns.reload({
+                        where: conditions
+                        ,page: {
+                            curr: 1 //重新从第 1 页开始
+                        }
+                    });
+                }
+                ,updatesubmit: function(){
+                    var updatedata = form.val("updateform");
+                    updatedata["csrfmiddlewaretoken"] = '{{ csrf_token  }}'
+                    $.ajax({
+                        url: '{% url "submitedit" %}',
+                        type: 'POST', // POST/GET
+                        dataType: 'json',
+                        data: updatedata,
+                        success: function(returndata){
+                            // TODO = 此处取巧直接关闭所有弹出层, 如果日后有多个弹出层,需要获取index,对应关闭
+                            layer.closeAll(); 
+                            layer.alert("修改完毕，重载数据！")
+                            
+                        }
+                    })
+                    //表格刷新,保持当前查询条件，当前页
+                    var conditions = popstorage('rawcondition')?popstorage('rawcondition'):{} 
+                    var currentpage = popstorage('currentpage')?popstorage('currentpage'):1
+                    tableIns.reload({
+                        where: conditions
+                        ,page: {
+                            curr: currentpage //重新从第 1 页开始
+                        }
+                    });
+                }
+
+            }
+            //页面表单其他按钮事件绑定
+            $('.layui-btn').on('click', function(){
+                var othis = $(this);
+                var method = othis.data('method');
+                active[method] ? active[method].call(this, othis) : '';
+            });
+
+            function btnclickloading(pref, classname,isloading){
+                if(isloading){
+                    $('#'+pref+'icon').removeClass(classname)
+                    $('#'+pref+'icon').addClass("layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop")
+                    $('#importbtn').attr('disabled',"true");
+
+                }else{
+                    $('#'+pref+'icon').removeClass("layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop")
+                    $('#'+pref+'icon').addClass(classname)
+                    $('#'+pref+'btn').removeAttr("disabled");
+                }
+
+            }
+            function putstorage(key, obj){
+                if($.isPlainObject(obj) )
+                    sessionStorage.setItem(key, JSON.stringify(obj));
+                else{
+                    sessionStorage.setItem(key, obj);
+                }    
+            }
+            
+            function popstorage(key){
+                objstr = sessionStorage.getItem(key);
+                returnobj = null
+                if(objstr){
+                    returnobj = JSON.parse(objstr)
+                }
+                return returnobj
+            }
+
+        });    
+
+
+    </script>
 </body>
 
 

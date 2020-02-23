@@ -1,19 +1,27 @@
 #from django.shortcuts import render
 import xlrd
 import uuid
+
+import time
+
 from datetime import datetime
 
+
 from django.http import HttpResponse
+from django.utils.http import urlquote
 from django.template import loader
 from django.shortcuts import redirect
 from django.db.models import Q
-from django.urls import reverse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage, InvalidPage
+
+from openpyxl import Workbook
+from openpyxl.writer.excel import save_virtual_workbook
+
 from .models import Meeting
 from . import tests
 
-
 # Create your views here.
+
 
 def cleardata(request):
     tests.cleardata()
@@ -29,11 +37,11 @@ def formatcelldate(datestr):
     Returns:
         [datetime] -- [description]
     """
-    if('年' in datestr):
+    if ('年' in datestr):
         formatresult = datetime.strptime(datestr, '%Y年%m月%d日')
-    elif('-' in datestr):
+    elif ('-' in datestr):
         formatresult = datetime.strptime(datestr, '%Y-%m-%d')
-    elif('/' in datestr):
+    elif ('/' in datestr):
         formatresult = datetime.strptime(datestr, '%Y/%m/%d')
     else:
         formatresult = ""
@@ -46,9 +54,10 @@ def formatcelltext(textstr):
         textstr {[type]} -- [description]
     """
     formattext = ''
-    if(textstr):
-        formatext = textstr.replace(" ", "").replace("\t", "").replace('\n', ' ').replace('\r', ' ')
-    return formatext
+    if (textstr):
+        formattext = str(textstr).replace(" ", "").replace("\t", "").replace(
+            '\n', ' ').replace('\r', ' ')
+    return formattext
 
 
 def preparQ(q, con_name, con_value, con_suf='', func_format=None):
@@ -110,12 +119,12 @@ def indexnewquery(request):
     page = concat.get('page')  # 当前页码
     limit_str = concat.get('limit')  # 当前记录/页
     limit = 10
-    if(limit_str and limit_str.isdigit()):
+    if (limit_str and limit_str.isdigit()):
         limit = int(limit_str)
     try:
         paginator = Paginator(meetings, limit)
         meetingpage = paginator.page(page)
-    
+
     except PageNotAnInteger:
         # 如果请求的页数不是整数, 返回第一页。
         meetingpage = paginator.page(1)
@@ -126,21 +135,21 @@ def indexnewquery(request):
         # 如果请求的页数不在合法的页数范围内，返回结果的最后一页。
         meetingpage = paginator.page(paginator.num_pages)
 
-
     # layui 数据表格数据源格式化
     array_json = []
     jsonstr = ""
     allmeetingcount = len(meetings)
     for meeting in meetingpage:
         array_json.append(
-            '{' +
-            '"pid": "{}", "m_guide": "{}", "m_lotno": "{}", "m_room": "{}", "m_name": "{}", "m_date": "{}", "m_time": "{}", "m_inteval": "{}", "m_mp": "{}", "m_mobile": "{}", "createtime": "{}"'
+            '{{"pid": "{}", "m_guide": "{}", "m_lotno": "{}", "m_room": "{}", "m_name": "{}", "m_date": "{}","m_time": "{}", "m_inteval": "{}", "m_mp": "{}", "m_mobile": "{}","m_org": "{}", "m_stime": "{}", "m_etime": "{}", "createtime": "{}"}}'
             .format(meeting.pid, meeting.m_guide, meeting.m_lotno,
                     meeting.m_room, meeting.m_name, meeting.m_date,
-                    (meeting.m_stime.strftime("%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
-                    meeting.createtime.strftime('%Y-%m-%d %H:%M')) + '}')
-    
-    jsonstr = '{{"code":0,"msg":"","count":{},"data":[{}]}}'.format(allmeetingcount, ','.join(array_json))
+                    (meeting.m_stime.strftime("%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")
+                     ), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
+                    meeting.m_org, meeting.m_stime, meeting.m_etime,
+                    meeting.createtime.strftime('%Y-%m-%d %H:%M')))
+    jsonstr = '{{"code":0,"msg":"","count":{},"data":[{}]}}'.format(
+        allmeetingcount, ','.join(array_json))
     return HttpResponse(jsonstr)
 
 
@@ -151,8 +160,8 @@ def submitedit(request):
         meeting = Meeting.objects.get(pid=editPid)
         m_stime = concat['m_stime']
         m_etime = concat['m_etime']
-        stime = datetime.strptime(m_stime.strip(), "%H:%M")
-        etime = datetime.strptime(m_etime.strip(), "%H:%M")
+        stime = datetime.strptime(m_stime.strip(), "%H:%M:%S")
+        etime = datetime.strptime(m_etime.strip(), "%H:%M:%S")
         count_inteval = (etime - stime).seconds / 60
         meeting.m_room = concat['m_room']
         meeting.m_date = concat['m_date']
@@ -164,9 +173,8 @@ def submitedit(request):
         meeting.m_etime = m_etime
         meeting.m_inteval = count_inteval
         meeting.m_org = concat['m_org']
-        meeting.m_orgre = concat['m_orgre']
         meeting.save()
-    return redirect(reverse("index"))
+    return HttpResponse('{"code":"0"}')
 
 
 def importExcel(request):
@@ -178,7 +186,8 @@ def importExcel(request):
             concat = request.POST
             m_lotno = concat['m_lotno']
             excel_file = request.FILES['importExcel']
-            wb = xlrd.open_workbook(filename=None, file_contents=excel_file.read())
+            wb = xlrd.open_workbook(filename=None,
+                                    file_contents=excel_file.read())
             table = wb.sheets()[0]
             total_rows = table.nrows  # 拿到总共行数
             now = datetime.now()
@@ -202,13 +211,13 @@ def importExcel(request):
                     m_lotno=m_lotno,
                     m_room=formatcelltext(row[0]),
                     m_date=formatcelldate(row[1]),
-                    m_guide=formatcelldate(row[3]),
-                    m_number=formatcelldate(row[4]),
-                    m_name=formatcelldate(row[5]),
-                    m_mp=formatcelldate(row[6]),
-                    m_mobile=formatcelldate(row[7]),
-                    m_org=formatcelldate(row[8]),
-                    m_orgre=formatcelldate(row[9]),
+                    m_guide=formatcelltext(row[3]),
+                    m_number=formatcelltext(row[4]),
+                    m_name=formatcelltext(row[5]),
+                    m_mp=formatcelltext(row[6]),
+                    m_mobile=formatcelltext(row[7]),
+                    m_org=formatcelltext(row[8]),
+                    m_orgre=formatcelltext(row[9]),
                     createtime=now,
                     m_stime=stime,
                     m_etime=etime,
@@ -223,3 +232,61 @@ def importExcel(request):
         finally:
             del wb
     return HttpResponse('{"code":"0"}')
+
+
+def insertemptyrow(ws, rowcount, rowindex):
+    for index in range(rowcount):
+        ws['A{}'.format(rowindex + index)] = ''
+        ws['B{}'.format(rowindex + index)] = ''
+        ws['C{}'.format(rowindex + index)] = ''
+        ws['D{}'.format(rowindex + index)] = ''
+
+
+def downloadsigninsheet(request):
+    # 读取数据
+    concat = request.POST
+    m_lotno = concat['m_lotno']
+    q1 = Q()
+    q1.connector = 'AND'
+    preparQ(q1, 'm_lotno', concat.get('m_lotno_s'))
+    meetings = Meeting.objects.filter(q1).order_by('m_room', 'm_date', 'm_stime')
+    # 组织生成Excel内容
+    the_file_name = '批次{}_签到表_{}.xlsx'.format(m_lotno, time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
+    book = Workbook()
+    sheetindex = 1
+    for meeting in meetings:
+        meetingdate = meeting.m_date.strftime('%Y-%m-%d')
+        meetingtime = meeting.m_stime.strftime("%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")
+        sheetname = '{}({})'.format(meetingdate, sheetindex)
+        if(sheetindex == 1):
+            ws = book.active
+            ws.title = sheetname
+        else:
+            ws = book.create_sheet(sheetname)
+        ws.merge_cells('A1:D1')  # 签到表标题
+        ws.merge_cells('A2:D2')  # 签到表标题
+        ws.merge_cells('A3:D3')  # 签到表标题
+        ws.merge_cells('A4:D4')  # 签到表标题
+        ws['A1'] = '视频答辩签到表'
+        ws['A2'] = '项目名称：{}'.format(meeting.m_name)
+        ws['A3'] = '答辩日期：{} ({})'.format(meetingdate, meetingtime)
+        ws['A4'] = '答辩地点：{}'.format(meeting.m_room)
+        ws['A5'] = '序号'
+        ws['B5'] = '项目负责人\n(主报告人)'
+        ws['C5'] = '单位'
+        ws['D5'] = '联系方式'
+        insertemptyrow(ws, 3, 6)
+        ws['A9'] = '序号'
+        ws['B9'] = '其他参会人'
+        ws['C9'] = '单位'
+        ws['D9'] = '联系方式'
+        insertemptyrow(ws, 15, 10)
+        sheetindex = sheetindex + 1
+        pass
+    # 文件输出response
+    response = HttpResponse(save_virtual_workbook(book), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    the_file_name = urlquote(the_file_name)
+    response['Content-Disposition'] = 'attachment; filename=test.xls'
+    disposition = ('attachment;filename={}').format(the_file_name)
+    response['Content-Disposition'] = disposition
+    return response

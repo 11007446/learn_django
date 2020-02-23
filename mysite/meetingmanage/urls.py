@@ -10,6 +10,9 @@ urlpatterns = [
     path('delcheckedmeetingdata', views.delcheckedmeetingdata, name='delcheckedmeetingdata'),
     path('importExcel/', views.importExcel, name='importExcel'),
     path('cleardata/', views.cleardata, name='cleardata'),
+    path('submitedit/', views.submitedit, name='submitedit'),
+    path('downloadsigninsheet/', views.downloadsigninsheet, name='downloadsigninsheet')
+
     # path('index/', views.index, name='index'),
     # path('gendata/', views.gendata, name='gendata'),
     # path('cleardata/', views.cleardata, name='cleardata'),

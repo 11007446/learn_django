@@ -27,6 +27,35 @@
             ☐ 解决favicon.ico 404问题
                 怀疑是Django静态资源配置问题
                 重新学习Django静态资源配置 
+        错误修复:
+            ☐ bug：手机号纯数字,导入后页面展示为 如“ 13817539315.0 ”    
+
+        测试:
+            ☐ case：上传excel后,表格重载显示首页,每页数据10条(默认设定) @started(20-02-21 21:10)
+            ☐ case: 翻页，跳页，删除，修改看是否会丢失查询条件
+                单一条件
+                复合条件
+
+            修改点:
+                ✔ 上传文件后,缺少一个读条转圈显示后台正在处理 @done(20-02-21 20:31)
+                    点击按钮后，显示转圈动画，并禁用按钮。后台操作完毕后，恢复按钮原图标并解禁
+                ☐ 删除后表格重载丢失查询条件
+                    查询时将查询条件保存至存储
+                    sessionStorage.setItem('rawcondition',conditions);
+                    在读取时编程一个字符串[Object object]
+                    翻找资料后
+                    storage只能存储字符串的数据，对于JS中常用的数组或对象却不能直接存储。
+                    上面的写法都是不能成功的！但我们可以通过JSON对象提供的parse和stringify将其他数据类型转化成字符串，
+                    再存储到storage中就可以了。请看下面的代码。
+                    存
+                    var obj = { name:'Jim' };
+                    var str = JSON.stringify(obj);
+                    sessionStorage.obj = str;
+                    取
+                    str = sessionStorage.obj;
+                    obj = JSON.parse(str);
+
+
 emacs 学习:
     通读emacs内置教程:
         ✔ 基本光标移动 @done(20-02-20 23:06)
