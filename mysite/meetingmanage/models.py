@@ -34,3 +34,5 @@ class Meeting(models.Model):
     m_number = models.CharField(max_length=50, default='')  # 项目编号
 
     m_lotno = models.CharField(max_length=50)  # 视频答辩批号
+
+    m_symbol = models.CharField(max_length=20, default='')

@@ -1,11 +1,9 @@
 #from django.shortcuts import render
 import xlrd
 import uuid
-
 import time
 
 from datetime import datetime
-
 
 from django.http import HttpResponse
 from django.utils.http import urlquote
@@ -13,14 +11,34 @@ from django.template import loader
 from django.shortcuts import redirect
 from django.db.models import Q
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage, InvalidPage
+from django.http.response import JsonResponse
 
 from openpyxl import Workbook
 from openpyxl.writer.excel import save_virtual_workbook
+from openpyxl.styles import Font, colors, Alignment, Border, Side, PatternFill
 
 from .models import Meeting
 from . import tests
+from . import mailsender
 
 # Create your views here.
+
+
+def sendweekplan(request):
+    weekdayrange = mailsender.getweekdayrange()
+    q1 = Q()
+    q1.connector = 'AND'
+    preparQ(q1, 'm_date', weekdayrange[0], con_suf='__gte')
+    preparQ(q1, 'm_date', weekdayrange[1], con_suf='__lte')
+    meetings = Meeting.objects.filter(q1).order_by('m_date', 'm_stime')
+    if(len(meetings)>0):
+        result = mailsender.sendweekplanmail(meetings)
+        if (result):
+            return JsonResponse({'code': '0'})
+        else:
+            return JsonResponse({'code': '1'})
+    else:
+        return JsonResponse({'code': '2'})
 
 
 def cleardata(request):
@@ -64,7 +82,7 @@ def preparQ(q, con_name, con_value, con_suf='', func_format=None):
     """将查询条件填充Q查询对象
     Arguments:
         q {[type]} -- [Q查询对象]
-        con_suf {[type]} -- [查询条件后缀 例: __contains __glt ] (default: "")
+        con_suf {[type]} -- [查询条件后缀 例: __contains 包含 __gte 大等于 __lte 小等于 ] (default: "")
         con_name {[type]} -- [查询参数名称]
         con_value {[type]} -- [查询参数值]
     Keyword Arguments:
@@ -86,7 +104,7 @@ def delcheckedmeetingdata(request):
         pids = concat['checkedPid']
         if (pids):
             Meeting.objects.filter(pid__in=pids.split(',')).delete()
-            message = '删除成功'
+            datafilter()
     reponsestr = '{"code":"0"}'
     return HttpResponse(reponsestr)
 
@@ -114,7 +132,9 @@ def indexnewquery(request):
     preparQ(q1, 'm_mp', concat.get('m_mp_s'), con_suf='__contains')
     preparQ(q1, 'm_date', concat.get('m_date1'), con_suf='__gte')
     preparQ(q1, 'm_date', concat.get('m_date2'), con_suf='__lte')
-    meetings = Meeting.objects.filter(q1).order_by('createtime')
+    preparQ(q1, 'm_symbol', concat.get('m_symbol_s'), con_suf='__contains')
+
+    meetings = Meeting.objects.filter(q1).order_by('m_date', 'm_stime')
     # 分页处理
     page = concat.get('page')  # 当前页码
     limit_str = concat.get('limit')  # 当前记录/页
@@ -141,12 +161,13 @@ def indexnewquery(request):
     allmeetingcount = len(meetings)
     for meeting in meetingpage:
         array_json.append(
-            '{{"pid": "{}", "m_guide": "{}", "m_lotno": "{}", "m_room": "{}", "m_name": "{}", "m_date": "{}","m_time": "{}", "m_inteval": "{}", "m_mp": "{}", "m_mobile": "{}","m_org": "{}", "m_stime": "{}", "m_etime": "{}", "createtime": "{}"}}'
+            '{{"pid": "{}", "m_guide": "{}", "m_lotno": "{}", "m_room": "{}", "m_name": "{}", "m_date": "{}","m_time": "{}", "m_symbol": "{}", "m_mp": "{}", "m_mobile": "{}","m_org": "{}", "m_stime": "{}", "m_etime": "{}", "createtime": "{}"}}'
             .format(meeting.pid, meeting.m_guide, meeting.m_lotno,
                     meeting.m_room, meeting.m_name, meeting.m_date,
-                    (meeting.m_stime.strftime("%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")
-                     ), meeting.m_inteval, meeting.m_mp, meeting.m_mobile,
-                    meeting.m_org, meeting.m_stime, meeting.m_etime,
+                    (meeting.m_stime.strftime("%H:%M") + " - " +
+                     meeting.m_etime.strftime("%H:%M")), meeting.m_symbol,
+                    meeting.m_mp, meeting.m_mobile, meeting.m_org,
+                    meeting.m_stime, meeting.m_etime,
                     meeting.createtime.strftime('%Y-%m-%d %H:%M')))
     jsonstr = '{{"code":0,"msg":"","count":{},"data":[{}]}}'.format(
         allmeetingcount, ','.join(array_json))
@@ -174,6 +195,7 @@ def submitedit(request):
         meeting.m_inteval = count_inteval
         meeting.m_org = concat['m_org']
         meeting.save()
+        datafilter()
     return HttpResponse('{"code":"0"}')
 
 
@@ -191,6 +213,7 @@ def importExcel(request):
             table = wb.sheets()[0]
             total_rows = table.nrows  # 拿到总共行数
             now = datetime.now()
+            # 数据导入
             for rowindex in range(1, total_rows):  # 跳过首行标题
                 row = table.row_values(rowindex)
                 timestr = formatcelltext(row[2])
@@ -223,9 +246,11 @@ def importExcel(request):
                     m_etime=etime,
                     m_inteval=interval,
                 )
-                print(meeting)
+                # print(meeting)
                 meeting.save()
+            datafilter()
             wb.release_resources()
+
         except RuntimeError as e:
             print("导入出错: {0}".format(e))
             return HttpResponse('{"code":"1"}')
@@ -234,31 +259,108 @@ def importExcel(request):
     return HttpResponse('{"code":"0"}')
 
 
-def insertemptyrow(ws, rowcount, rowindex):
+def omitname(name, omitcount=5):
+    if (len(name) > omitcount):
+        return name[0:omitcount]
+    else:
+        return name
+
+
+def datafilter():
+    """过滤答辩数据,标识 冲突 连场 并场记录
+    """
+    #TODO 遍历集合
+    #TODO 答辩日期相同、答辩室相同、起始时间相同 标识为冲突
+    #TODO 答辩日期相同、答辩室相同、结束时间与其他答辩开始时间重合、标识为连场
+    #TODO 答辩日期相同、答辩室不同、结束时间与其他答辩开始时间重合标识为并场
+    q1 = Q()
+    preparQ(q1,
+            'm_date',
+            time.strftime('%Y-%m-%d', time.localtime(time.time())),
+            con_suf='__gte')
+    meetingstofilter = Meeting.objects.filter(q1).order_by('m_date', 'm_stime')
+    for meeting in meetingstofilter:
+        meeting.m_symbol = ""
+        for meeting_c in meetingstofilter:
+            meeting_c.m_symbol = ""
+            if (meeting.pid == meeting_c.pid):
+                continue
+            if (meeting.m_date == meeting_c.m_date):
+                if (meeting.m_stime == meeting_c.m_stime):
+                    if (meeting.m_room == meeting_c.m_room):
+                        meeting.m_symbol = meeting.m_symbol + '与项目 [{}...] 冲突 '.format(
+                            omitname(meeting_c.m_name))
+                        meeting_c.m_symbol = meeting_c.m_symbol + '与项目 [{}...] 冲突 '.format(
+                            omitname(meeting.m_name))
+                    else:
+                        meeting.m_symbol = meeting.m_symbol + '与项目 [{}...] 并场 '.format(
+                            omitname(meeting_c.m_name))
+                        meeting_c.m_symbol = meeting_c.m_symbol + '与项目 [{}...] 并场 '.format(
+                            omitname(meeting.m_name))
+                    meeting.save()
+                    meeting_c.save()
+                elif (meeting.m_etime == meeting_c.m_stime):
+                    if (meeting.m_room == meeting_c.m_room):
+                        meeting.m_symbol = meeting.m_symbol + '与项目 [{}...] 连场 '.format(
+                            omitname(meeting_c.m_name))
+                        meeting_c.m_symbol = meeting_c.m_symbol + '与项目 [{}...] 连场 '.format(
+                            omitname(meeting.m_name))
+                        meeting.save()
+                        meeting_c.save()
+
+
+def insertemptyrow(ws, rowcount, rowindex, border, rowheight=30):
     for index in range(rowcount):
-        ws['A{}'.format(rowindex + index)] = ''
+        ws['A{}'.format(rowindex + index)] = index + 1
+        ws['A{}'.format(rowindex + index)].alignment = Alignment(
+            horizontal='center', vertical='center', wrapText=True)
+        ws['A{}'.format(rowindex + index)].border = border
         ws['B{}'.format(rowindex + index)] = ''
+        ws['B{}'.format(rowindex + index)].border = border
         ws['C{}'.format(rowindex + index)] = ''
+        ws['C{}'.format(rowindex + index)].border = border
         ws['D{}'.format(rowindex + index)] = ''
+        ws['D{}'.format(rowindex + index)].border = border
+        ws.row_dimensions[(rowindex + index)].height = rowheight
 
 
 def downloadsigninsheet(request):
     # 读取数据
-    concat = request.POST
+    concat = request.GET
     m_lotno = concat['m_lotno']
     q1 = Q()
-    q1.connector = 'AND'
-    preparQ(q1, 'm_lotno', concat.get('m_lotno_s'))
-    meetings = Meeting.objects.filter(q1).order_by('m_room', 'm_date', 'm_stime')
+    q1.children.append(('m_lotno', m_lotno))
+    meetings = Meeting.objects.filter(q1).order_by('m_room', 'm_date',
+                                                   'm_stime')
     # 组织生成Excel内容
-    the_file_name = '批次{}_签到表_{}.xlsx'.format(m_lotno, time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
+
+    # 使用ajax下载文件， 文件名由前端JS决定，所以这里设置已无效
+    the_file_name = '批次{}_签到表_{}.xlsx'.format(
+        m_lotno, time.strftime('%Y%m%d%H%M%S', time.localtime(time.time())))
     book = Workbook()
     sheetindex = 1
+
+    a_centeralignment = Alignment(horizontal='center',
+                                  vertical='center',
+                                  wrapText=True)
+    v_centeralignment = Alignment(vertical='center')
+    border = Border(top=Side(border_style='thin', color=colors.BLACK),
+                    bottom=Side(border_style='thin', color=colors.BLACK),
+                    left=Side(border_style='thin', color=colors.BLACK),
+                    right=Side(border_style='thin', color=colors.BLACK))
+
+    titlefont = Font(name='仿宋_GB2312', size=25, color=colors.BLACK, bold=True)
+    subtitlefont = Font(name='仿宋_GB2312', size=14, color=colors.BLACK)
+    tabletitlefont = Font(name='仿宋_GB2312', size=12, color=colors.BLACK)
+    fill = PatternFill("solid", fgColor='C9C9C9')
+
     for meeting in meetings:
         meetingdate = meeting.m_date.strftime('%Y-%m-%d')
-        meetingtime = meeting.m_stime.strftime("%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")
-        sheetname = '{}({})'.format(meetingdate, sheetindex)
-        if(sheetindex == 1):
+        meetingtime = meeting.m_stime.strftime(
+            "%H:%M") + " - " + meeting.m_etime.strftime("%H:%M")
+        meetroom = meeting.m_room
+        sheetname = '{} {}({})'.format(meetroom, meetingdate, sheetindex)
+        if (sheetindex == 1):
             ws = book.active
             ws.title = sheetname
         else:
@@ -275,18 +377,68 @@ def downloadsigninsheet(request):
         ws['B5'] = '项目负责人\n(主报告人)'
         ws['C5'] = '单位'
         ws['D5'] = '联系方式'
-        insertemptyrow(ws, 3, 6)
+        insertemptyrow(ws, 3, 6, border)
         ws['A9'] = '序号'
         ws['B9'] = '其他参会人'
         ws['C9'] = '单位'
         ws['D9'] = '联系方式'
-        insertemptyrow(ws, 15, 10)
+        insertemptyrow(ws, 15, 10, border)
+        # 设置单元格格式
+
+        titlerowheight = 45
+        subtitlerowheight = 40
+        tabletitlerowheight = 35
+        ws['A1'].font = titlefont
+        ws['A1'].alignment = a_centeralignment
+        ws['A2'].font = subtitlefont
+        ws['A2'].alignment = v_centeralignment
+        ws['A3'].font = subtitlefont
+        ws['A3'].alignment = v_centeralignment
+        ws['A4'].font = subtitlefont
+        ws['A4'].alignment = v_centeralignment
+
+        ws['A5'].alignment = a_centeralignment
+        ws['B5'].alignment = a_centeralignment
+        ws['C5'].alignment = a_centeralignment
+        ws['D5'].alignment = a_centeralignment
+        ws['A5'].border = border
+        ws['B5'].border = border
+        ws['C5'].border = border
+        ws['D5'].border = border
+        ws['A5'].fill = fill
+        ws['B5'].fill = fill
+        ws['C5'].fill = fill
+        ws['D5'].fill = fill
+
+        ws['A9'].alignment = a_centeralignment
+        ws['B9'].alignment = a_centeralignment
+        ws['C9'].alignment = a_centeralignment
+        ws['D9'].alignment = a_centeralignment
+        ws['A9'].border = border
+        ws['B9'].border = border
+        ws['C9'].border = border
+        ws['D9'].border = border
+        ws['A9'].fill = fill
+        ws['B9'].fill = fill
+        ws['C9'].fill = fill
+        ws['D9'].fill = fill
+
+        ws.row_dimensions[1].height = titlerowheight
+        ws.row_dimensions[2].height = subtitlerowheight
+        ws.row_dimensions[3].height = subtitlerowheight
+        ws.row_dimensions[4].height = subtitlerowheight
+        ws.row_dimensions[5].height = tabletitlerowheight
+        ws.row_dimensions[9].height = tabletitlerowheight
+        ws.column_dimensions['A'].width = 6
+        ws.column_dimensions['B'].width = 20
+        ws.column_dimensions['C'].width = 34
+        ws.column_dimensions['D'].width = 22
+
         sheetindex = sheetindex + 1
         pass
     # 文件输出response
     response = HttpResponse(save_virtual_workbook(book), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     the_file_name = urlquote(the_file_name)
-    response['Content-Disposition'] = 'attachment; filename=test.xls'
     disposition = ('attachment;filename={}').format(the_file_name)
     response['Content-Disposition'] = disposition
     return response
