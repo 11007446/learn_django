@@ -34,13 +34,10 @@ def getweekdayrange():
 
 
 def sendweekplanmail(meetings):
-    mail_content = """
+    mail_content = r"""
         <br>
-        <div>本周视频答辩安排如下:{}</div>
-        <br>
-        <div>
-            <font color='#ff0000'>本周安排中有异常情况，请运维人员注意！</font>
-        </div>
+        <div>本周视频答辩安排如下_weekday_:</div>
+        _warning_
         <br>
 
         <table border='1' bordercolor='#000000' cellpadding='2' cellspacing='0'
@@ -104,13 +101,14 @@ def sendweekplanmail(meetings):
                         </font>
                     </td>
                 </tr>
-                {}
+                _tablecontent_
             </tbody>
         </table>
     """
 
     rows = []
     loopindex = 1
+    warning = False
     for meeting in meetings:
         #
         # 序号
@@ -121,6 +119,8 @@ def sendweekplanmail(meetings):
         #  负责人
         #  联系电话
         #  异常情况
+        if('连场' in meeting.m_symbol or '并场' in meeting.m_symbol or '冲突' in meeting.m_symbol):
+            warning = True
 
         table_content = """
                     <tr>
@@ -133,14 +133,28 @@ def sendweekplanmail(meetings):
                         <td width='12%' nowrap=''>{}</td>
                         <td width='12%' nowrap=''>{}</td>
                     </tr>
-                    """.format(
-            loopindex, meeting.m_name, meeting.m_guide, meeting.m_date,
-            (meeting.m_stime.strftime("%H:%M") + " - " +
-             meeting.m_etime.strftime("%H:%M")) + meeting.m_mp +
-            meeting.m_mobile + meeting.m_symbol)
+                    """.format(loopindex, meeting.m_name, meeting.m_guide,
+                               meeting.m_date,
+                               (meeting.m_stime.strftime("%H:%M") + " - " +
+                                meeting.m_etime.strftime("%H:%M")),
+                               meeting.m_mp, meeting.m_mobile,
+                               meeting.m_symbol)
         rows.append(table_content)
         loopindex = loopindex + 1
-    mail_content.format(getweekdayinfo(), ('').join(rows))
+    contenttalbe = ('').join(rows)
+    warning_content = ''
+    if(warning):
+        warning_content = """
+        <br>
+        <div>
+            <font color='#ff0000'>本周安排中有异常情况，请运维人员注意！</font>
+        </div>
+        """
+
+    mail_content = mail_content.replace('_weekday_', getweekdayinfo())
+    mail_content = mail_content.replace('_warning_', warning_content)
+    mail_content = mail_content.replace('_tablecontent_', contenttalbe)
+    #mail_content.format(getweekdayinfo(), contenttalbe)
 
     msg = MIMEText(mail_content, "html", 'utf-8')
     msg["Subject"] = Header('weekplan', 'utf-8')

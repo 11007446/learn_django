@@ -167,27 +167,49 @@
             <div class="layui-field-box">
                 <form id="lotnoform"  class="layui-form layui-form-pane" >
                 {% csrf_token %}
-                    <div class="layui-inline">
-                        <label class="layui-form-label">批次号</label>
-                        <div class="layui-input-inline" style="width:150px;">
-                            <input type="text" id="m_lotno" name="m_lotno" class="layui-input">
+                    <fieldset class="layui-elem-field">
+                    <legend>批次操作</legend>
+                        <div class="layui-field-box">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">批次号</label>
+                            <div class="layui-input-inline" style="width:150px;">
+                                <input type="text" id="m_lotno" name="m_lotno" class="layui-input">
+                            </div>
+                            <div class="layui-btn-group">
+                                <button type="button" class="layui-btn  layui-input-inline" id="importbtn" >
+                                    <i class="layui-icon layui-icon-upload" id="importicon" ></i>导入EXCEL清单
+                                </button>
+                                <button type="button" class="layui-btn  layui-input-inline" data-method="exportData" id="exportbtn">
+                                    <i class="layui-icon layui-icon-export" id='exporticon'></i>导出答辩签到表
+                                </button>
+  
+                            </div>
                         </div>
-                        <div class="layui-btn-group">
-                            <button type="button" class="layui-btn layui-btn-primary layui-input-inline" id="importbtn" >
-                                <i class="layui-icon layui-icon-upload" id="importicon" ></i>导入EXCEL清单
-                            </button>
-                            <button type="button" class="layui-btn layui-btn-primary layui-input-inline" data-method="exportData" id="exportbtn">
-                                <i class="layui-icon layui-icon-export" id='exporticon'></i>导出答辩签到表
-                            </button>
-                            &nbsp;
-                            <button type="button" class="layui-btn layui-btn-primary layui-input-inline" data-method="delCheckedData">
-                                <i class="layui-icon layui-icon-delete"></i>删除选中记录
-                            </button>
-                            <button type="button" class="layui-btn layui-btn-primary layui-input-inline" data-method="sendweekplan">
-                                <i class="layui-icon layui-icon-delete"></i>发送本周答辩安排
-                            </button>
                         </div>
-                    </div>
+                        </fieldset>
+
+                        <fieldset class="layui-elem-field">
+                        <legend>清单管理</legend>
+                            <div class="layui-field-box">
+                            
+                                <div class="layui-btn-group">
+
+
+                                    <button type="button" class="layui-btn  layui-input-inline" data-method="delCheckedData">
+                                        <i class="layui-icon layui-icon-delete"></i>删除选中记录
+                                    </button>
+                                    <button type="button" class="layui-btn  layui-input-inline" data-method="sendweekplan" id="sendbtn">
+                                        <i class="layui-icon layui-icon-email" id="sendicon"></i>发送本周答辩安排
+                                    </button>
+                                    <button type="button" class="layui-btn  layui-input-inline" data-method="exportdatalist" id="printbtn">
+                                        <i class="layui-icon layui-icon-print" id="printicon"></i>导出查询清单
+                                    </button>
+                                </div>
+
+
+                            </div>
+
+                        </fieldset>
                 </form>
             </div>            
         </fieldset>
@@ -200,7 +222,7 @@
     <script src="{% static 'meetingmanage/jslib/layui/layui.js' %}"></script>
 
     <script type="text/html" id="rowbar">
-        <button type="button" class="layui-btn layui-btn-xs" lay-event="editData" >
+        <button type="button" class="layui-btn layui-btn-primary layui-btn-xs" lay-event="editData" >
             <i class="layui-icon layui-icon-edit"></i> 修改
         </button>
     </script>
@@ -415,7 +437,7 @@
                         var xhr = new XMLHttpRequest();
                         lotno =  $('#m_lotno').val()
                         exportfilename = '批次'+lotno+'_签到表.xlsx'
-
+                        
                         xhr.open('GET', '{% url "downloadsigninsheet" %}'+'?m_lotno=' + $('#m_lotno').val(), true); 
                         xhr.responseType = "blob"; 
                         xhr.onload = function () {
@@ -433,13 +455,47 @@
                                     $(a).remove();
                                 }
                             }
-                            btnclickloading('export','layui-icon-upload',false)
+                            btnclickloading('export','layui-icon-export',false)
 
                         };
-                        btnclickloading('export','layui-icon-upload',true)
+                        btnclickloading('export','layui-icon-export',true)
+                        xhr.send();  
+                    }
+                    ,exportdatalist:function(){
+                        var conditions = form.val("searchform");
+                        var conditionsparam = ""
+                        for(let key in conditions){
+                            conditionsparam += "&"+key+"="+conditions[key]
+                        }
+                        exportfilename = '查询结果导出.xlsx'
+                        var xhr = new XMLHttpRequest();
+                        url = '{% url "exportdatalist" %}?1=1' + conditionsparam
+                        xhr.open('GET', url , true); 
+                        xhr.responseType = "blob"; 
+                        xhr.onload = function () {
+                            if (this.status === 200) {
+                                var blob = this.response;
+                                var reader = new FileReader();
+                                reader.readAsDataURL(blob);  // 转换为base64，可以直接放入a表情href
+                                reader.onload = function (e) {
+                                // 转换完成，创建一个a标签用于下载
+                                    var a = document.createElement('a');
+                                    a.download = exportfilename;
+                                    a.href = e.target.result;
+                                    $("body").append(a);  // 修复firefox中无法触发click
+                                    a.click();
+                                    $(a).remove();
+                                }
+                            }
+                            btnclickloading('print','layui-icon-print',false)
+
+                        };
+                        btnclickloading('print','layui-icon-print',true)
                         xhr.send();  
                     }
                     ,sendweekplan:function(){
+                        
+                        btnclickloading('send','layui-icon-mail',true)
                         $.ajax({
                             url: '{% url "sendweekplan" %}',
                             type: 'POST',
@@ -449,6 +505,7 @@
                             },
                             datatype:'json',
                             success: function(returndata){
+                                btnclickloading('send','layui-icon-mail',false)
                                 if('0' == returndata.code){
                                     layer.alert('已发送邮件,注意查收！')
 
@@ -478,10 +535,12 @@
                     //$('#'+pref+'icon').removeClass(classname)
                     $('#'+pref+'icon').addClass("layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop")
                     $('#'+pref+'btn').attr('disabled',"true");
+                    layer.alert("数据处理中请稍后！")
 
                 }else{
                     $('#'+pref+'icon').removeClass("layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop")
                     //$('#'+pref+'icon').addClass(classname)
+                    layer.alert("数据处理完毕！")
                     $('#'+pref+'btn').removeAttr("disabled");
                 }
 

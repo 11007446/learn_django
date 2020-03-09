@@ -16,6 +16,7 @@ from django.http.response import JsonResponse
 from openpyxl import Workbook
 from openpyxl.writer.excel import save_virtual_workbook
 from openpyxl.styles import Font, colors, Alignment, Border, Side, PatternFill
+#from openpyxl.utils import get_column_letter
 
 from .models import Meeting
 from . import tests
@@ -24,14 +25,95 @@ from . import mailsender
 # Create your views here.
 
 
+def exportdatalist(request):
+    meetings = None
+    # if "POST" == request.method:  # 条件查询
+    concat = request.GET
+    # concat['m_room_s'] 如果key对应的值为空，会抛出Keyerror错误
+    # concat.get('key') 如果key对应的值为空，返回 None
+
+    # 条件查询
+    q1 = Q()
+    q1.connector = 'AND'
+    preparQ(q1, 'm_room', concat.get('m_room_s'))
+    preparQ(q1, 'm_lotno', concat.get('m_lotno_s'), con_suf='__contains')
+    preparQ(q1, 'm_name', concat.get('m_name_s'), con_suf='__contains')
+    preparQ(q1, 'm_guide', concat.get('m_guide_s'), con_suf='__contains')
+    preparQ(q1, 'm_mp', concat.get('m_mp_s'), con_suf='__contains')
+    preparQ(q1, 'm_date', concat.get('m_date1'), con_suf='__gte')
+    preparQ(q1, 'm_date', concat.get('m_date2'), con_suf='__lte')
+    preparQ(q1, 'm_symbol', concat.get('m_symbol_s'), con_suf='__contains')
+
+    meetings = Meeting.objects.filter(q1).order_by('m_date', 'm_stime')
+
+    # 组织生成Excel内容
+    book = Workbook()
+    ws = book.active
+    ws.title = '数据导出'
+    # 导出表格标题
+    ws['A1'] = '序号'
+    ws['B1'] = '答辩地点'
+    ws['C1'] = '答辩日期'
+    ws['D1'] = '答辩时间'
+    ws['E1'] = '项目名称'
+    ws['F1'] = '指南名称'
+    ws['G1'] = '单位'
+    ws['H1'] = '项目负责人'
+    ws['I1'] = '联系方式'
+
+    rowindex = 2
+    for meeting in meetings:
+        ws.cell(rowindex, 1, (rowindex - 1))
+        ws.cell(rowindex, 2, meeting.m_room)
+        ws.cell(rowindex, 3, (meeting.m_date.strftime('%Y-%m-%d')))
+        ws.cell(rowindex, 4, (meeting.m_stime.strftime("%H:%M") + " - " +
+                              meeting.m_etime.strftime("%H:%M")))
+        ws.cell(rowindex, 5, meeting.m_name)
+        ws.cell(rowindex, 6, meeting.m_guide)
+        ws.cell(rowindex, 7, meeting.m_org)
+        ws.cell(rowindex, 8, meeting.m_mp)
+        ws.cell(rowindex, 9, meeting.m_mobile)
+
+        rowindex = rowindex + 1
+        pass
+
+    #调整表格列宽 中文效果不佳 弃用
+    # column_widths = []
+    # for row in ws:
+    #     for i, cell in enumerate(row):
+    #         lencellvalue = len(str(cell.value))
+    #         if len(column_widths) > i:
+    #             if lencellvalue > column_widths[i]:
+    #                 column_widths[i] = lencellvalue
+    #         else:
+    #             column_widths += [lencellvalue]
+
+    # for i, column_width in enumerate(column_widths):
+    #     ws.column_dimensions[get_column_letter(i + 1)].width = column_width + 5
+
+    # 文件输出response
+    response = HttpResponse(
+        save_virtual_workbook(book),
+        content_type=
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    disposition = ('attachment;filename={}').format('')
+    # 使用ajax下载文件， 文件名由前端JS决定，所以这里设置文件名已无效，故设置空字窜
+    response['Content-Disposition'] = disposition
+    return response
+
+
 def sendweekplan(request):
     weekdayrange = mailsender.getweekdayrange()
     q1 = Q()
     q1.connector = 'AND'
     preparQ(q1, 'm_date', weekdayrange[0], con_suf='__gte')
     preparQ(q1, 'm_date', weekdayrange[1], con_suf='__lte')
-    meetings = Meeting.objects.filter(q1).order_by('m_date', 'm_stime')
-    if(len(meetings)>0):
+    #meetings = Meeting.objects.filter(q1).order_by('m_date', 'm_stime')
+    meetings = Meeting.objects.order_by('m_date', 'm_stime')
+    # 测试代码
+    # result = mailsender.sendweekplanmail(meetings)
+    # return JsonResponse({'code': '0'})
+    if (len(meetings) > 0):
         result = mailsender.sendweekplanmail(meetings)
         if (result):
             return JsonResponse({'code': '0'})
@@ -437,7 +519,10 @@ def downloadsigninsheet(request):
         sheetindex = sheetindex + 1
         pass
     # 文件输出response
-    response = HttpResponse(save_virtual_workbook(book), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response = HttpResponse(
+        save_virtual_workbook(book),
+        content_type=
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     the_file_name = urlquote(the_file_name)
     disposition = ('attachment;filename={}').format(the_file_name)
     response['Content-Disposition'] = disposition

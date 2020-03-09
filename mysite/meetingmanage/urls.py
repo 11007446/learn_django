@@ -12,7 +12,8 @@ urlpatterns = [
     path('cleardata/', views.cleardata, name='cleardata'),
     path('submitedit/', views.submitedit, name='submitedit'),
     path('downloadsigninsheet/', views.downloadsigninsheet, name='downloadsigninsheet'),
-    path('sendweekplan/', views.sendweekplan, name='sendweekplan')
+    path('sendweekplan/', views.sendweekplan, name='sendweekplan'),
+    path('exportdatalist/', views.exportdatalist, name='exportdatalist')
 
     # path('index/', views.index, name='index'),
     # path('gendata/', views.gendata, name='gendata'),
